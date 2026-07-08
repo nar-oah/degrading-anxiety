@@ -4,6 +4,7 @@ from enum import Enum
 from alloc import Alloc
 from radicale import REvent, Radicale
 
+CALENDAR = "schedule"
 radicale = Radicale()
 
 
@@ -23,7 +24,6 @@ class Arrange(Enum):
 
 @dataclass
 class Task:
-    calendar: str
     description: str
     duration: int
     arrange: Arrange = Arrange.NORMAL
@@ -38,11 +38,12 @@ def add_schedule(tasks: list[Task]) -> None:
             alarms=[0] if task.arrange == Arrange.NORMAL else [15],
         )
 
-    def add_event(task: Task, event: REvent) -> None:
-        radicale.add_event(task.calendar, event)
+    def add_event(event: REvent) -> None:
+        radicale.add_event(CALENDAR, event)
 
-    list(map(lambda task: add_event(task, get_event(task, Alloc())), tasks))
+    alloc = Alloc()
+    list(map(lambda task: add_event(get_event(task, alloc)), tasks))
 
 
 if __name__ == "__main__":
-    add_schedule([Task("test", "test", 10), Task("test", "test2", 20)])
+    add_schedule([Task("test", 10), Task("test2", 20)])
