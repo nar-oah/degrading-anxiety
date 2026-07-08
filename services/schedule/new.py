@@ -1,58 +1,48 @@
 from collections.abc import Callable
-from datetime import date
+from dataclasses import dataclass
+from enum import Enum
 from alloc import Alloc
 from radicale import REvent, Radicale
-import psycopg
 
 radicale = Radicale()
-type Task = tuple[str, str, int, str]
 
 
-def add_schedule() -> None:
-    def get_tasks(day: date) -> list[Task]:
-        query = """
-            SELECT calendar_name, schedule_description, duration_minutes, arrange_type
-            FROM schedules
-            WHERE %s = ANY(weekdays)
-            ORDER BY
-                CASE arrange_type
-                    WHEN 'early' THEN 0
-                    WHEN 'auto' THEN 1
-                    ELSE 2
-                END,
-                duration_minutes DESC,
-                id
-        """
-        with psycopg.connect() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(query, (day.weekday(),))
-                return list(cursor.fetchall())
+class Arrange(Enum):
+    EARLY = "early"
+    LATE = "late"
+    NORMAL = "normal"
 
-    def get_event(task: Task, alloc: Alloc) -> tuple[str, REvent]:
-        calendar, description, duration, arrange = task
-        key: Callable = (
-            (lambda x: x.begin)
-            if arrange == "early"
-            else (lambda x: -x.begin)
-            if arrange == "late"
-            else (lambda x: x.end - x.begin)
+    @property
+    def key(self) -> Callable:
+        return {
+            Arrange.EARLY: lambda x: x.begin,
+            Arrange.LATE: lambda x: -x.begin,
+            Arrange.NORMAL: lambda x: x.end - x.begin,
+        }[self]
+
+
+@dataclass
+class Task:
+    calendar: str
+    description: str
+    duration: int
+    arrange: Arrange = Arrange.NORMAL
+
+
+def add_schedule(tasks: list[Task]) -> None:
+    def get_event(task: Task, alloc: Alloc) -> REvent:
+        return REvent(
+            task.description,
+            *alloc.get_schedule(task.duration, task.arrange.key),
+            description=task.description,
+            alarms=[0] if task.arrange == Arrange.NORMAL else [15],
         )
-        event = REvent(
-            description,
-            *alloc.get_schedule(duration, key),
-            description=description,
-            alarms=[0] if arrange == "auto" else [15],
-        )
-        return calendar, event
 
-    def add_event(task: Task, alloc: Alloc) -> None:
-        calendar, event = get_event(task, alloc)
-        radicale.add_event(calendar, event)
+    def add_event(task: Task, event: REvent) -> None:
+        radicale.add_event(task.calendar, event)
 
-    alloc = Alloc()
-    tasks = get_tasks(date.today())
-    list(map(lambda task: add_event(task, alloc), tasks))
+    list(map(lambda task: add_event(task, get_event(task, Alloc())), tasks))
 
 
 if __name__ == "__main__":
-    add_schedule()
+    add_schedule([Task("test", "test", 10), Task("test", "test2", 20)])
