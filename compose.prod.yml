@@ -1,0 +1,24 @@
+services:
+  api:
+    image: ghcr.io/nar-oah/degrading-anxiety/api:latest
+    container_name: degrading-anxiety-api
+    restart: always
+    networks:
+      - traefik
+      - backend
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.degrading-anxiety.rule=Host(`aws.naroah.top`) && PathPrefix(`/degrading-anxiety`)"
+      - "traefik.http.routers.degrading-anxiety.entrypoints=websecure"
+      - "traefik.http.routers.degrading-anxiety.tls.certresolver=letsencrypt"
+      - "traefik.http.services.degrading-anxiety.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.degrading-anxiety-strip.stripprefix.prefixes=/degrading-anxiety"
+      - "traefik.http.routers.degrading-anxiety.middlewares=degrading-anxiety-strip"
+
+networks:
+  traefik:
+    external: true
