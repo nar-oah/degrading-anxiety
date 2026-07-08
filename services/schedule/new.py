@@ -9,7 +9,6 @@ import fcntl
 
 CALENDAR = "schedule"
 USERS_FILE = Path("/etc/radicale/users")
-radicale = Radicale()
 
 
 class Arrange(Enum):
@@ -33,7 +32,7 @@ class Task:
     arrange: Arrange = Arrange.NORMAL
 
 
-def add_schedule(tasks: list[Task]) -> None:
+def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
     def get_event(task: Task, alloc: Alloc) -> REvent:
         return REvent(
             task.description,
@@ -45,16 +44,14 @@ def add_schedule(tasks: list[Task]) -> None:
     def add_event(event: REvent) -> None:
         radicale.add_event(CALENDAR, event)
 
-    alloc = Alloc()
+    alloc = Alloc(radicale)
     list(map(lambda task: add_event(get_event(task, alloc)), tasks))
 
 
 def add_user(token: str) -> None:
-    def get_login(line: str) -> str:
-        return line.split(":", 1)[0]
-
     def has_user(file) -> bool:
         file.seek(0)
+        get_login: Callable[[str], str] = lambda line: line.split(":", 1)[0]
         return token in map(get_login, filter(lambda line: ":" in line, file))
 
     def write_user(file) -> bool:
@@ -68,10 +65,11 @@ def add_user(token: str) -> None:
 
     with USERS_FILE.open("a+", encoding="utf-8") as file:
         fcntl.flock(file, fcntl.LOCK_EX)
-        write_user(file) if not has_user(file) else None
-        Radicale(token).add_calendar(CALENDAR)
+        if not has_user(file):
+            write_user(file)
+            Radicale(token).add_calendar()
         fcntl.flock(file, fcntl.LOCK_UN)
 
 
 if __name__ == "__main__":
-    add_schedule([Task("test", 10), Task("test2", 20)])
+    add_schedule(Radicale("test"), [Task("test", 10), Task("test2", 20)])

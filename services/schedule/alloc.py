@@ -5,11 +5,9 @@ from caldav import Event
 from intervaltree import Interval, IntervalTree
 from radicale import Radicale
 
-radicale = Radicale()
-
 
 class Alloc:
-    def __init__(self, day: datetime | None = None) -> None:
+    def __init__(self, radicale: Radicale, day: datetime | None = None) -> None:
         def get_pieces(name: str) -> Iterable[tuple[int, int]]:
             get_piece = lambda x: (x.hour * 60) + x.minute
             events = radicale.get_times(name, self.day)
@@ -18,6 +16,7 @@ class Alloc:
         self.day = day if isinstance(day, datetime) else datetime.now()
         start = (self.day.hour * 60) + self.day.minute
         self.slots = IntervalTree([Interval(start, 21 * 60)])
+        self.radicale = radicale
         for start, end in chain(get_pieces("class"), get_pieces("exam")):
             self.slots.chop(start, end)
 
@@ -50,7 +49,7 @@ class Alloc:
             return (time.hour * 60) + time.minute
 
         delay_dt = self.day + timedelta(minutes=delay)
-        events = radicale.get_events(name, delay_dt)
+        events = self.radicale.get_events(name, delay_dt)
         self.slots.chop(get_piece(self.day), get_piece(delay_dt))
         self.day = delay_dt
         for event in events:
@@ -60,4 +59,4 @@ class Alloc:
 if __name__ == "__main__":
     name = "test_ielts"
     dt = datetime.combine(date.today(), time(hour=8)) + timedelta(days=2)
-    Alloc(dt).mod_schedule(name, 5)
+    Alloc(Radicale("test"), dt).mod_schedule(name, 5)

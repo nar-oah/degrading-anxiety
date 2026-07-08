@@ -73,34 +73,28 @@ class Radicale:
 
         return map(lambda x: get_time(x), self.get_events(name, day))
 
-    def _get_calendar(self, name: str):
-        def is_calendar(calendar) -> bool:
-            return calendar.get_display_name() == name
-
-        calendars = list(filter(is_calendar, self.principal.get_calendars()))
-        return (
-            calendars[0]
-            if len(calendars) > 0
-            else self.principal.make_calendar(name=name)
-        )
-
-    def _add_clalendar_head(self, calendar: Calendar) -> None:
-        calendar.add("prodid", "-//voice-calendar//naroah.top//")
-        calendar.add("version", "2.0")
-
-    def add_calendar(self, name: str) -> None:
-        self._get_calendar(name)
+    def add_calendar(self, name: str = CALENDAR) -> None:
+        self.principal.make_calendar(name=name)
 
     def get_calendar(self, start: datetime, end: datetime) -> bytes:
+        def get_calendar(name: str) -> Calendar:
+            is_calendar: Callable[[Calendar], bool] = lambda c: c.name == name
+            calendars = list(filter(is_calendar, self.principal.get_calendars()))
+            return calendars[0]
+
+        def add_head(calendar: Calendar) -> None:
+            calendar.add("prodid", "-//voice-calendar//naroah.top//")
+            calendar.add("version", "2.0")
+
         def add_vevent(calendar: Calendar, event: Event) -> None:
             source_calendar = Calendar.from_ical(event.data)
             vevents = filter(lambda c: c.name == "VEVENT", source_calendar.walk())
             list(map(lambda vevent: calendar.add_component(vevent), vevents))
 
-        calendar = self._get_calendar(CALENDAR)
+        calendar = get_calendar(CALENDAR)
         events = calendar.search(event=True, start=start, end=end, expand=False)
         output = Calendar()
-        self._add_clalendar_head(output)
+        add_head(output)
         list(map(lambda event: add_vevent(output, event), events))  # type: ignore
         return output.to_ical()
 
