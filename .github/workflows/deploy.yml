@@ -26,6 +26,9 @@ jobs:
           - name: api
             path: services/api
             image: ghcr.io/${{ github.repository }}/api:latest
+          - name: schedule
+            path: services/schedule
+            image: ghcr.io/${{ github.repository }}/schedule:latest
 
     steps:
       - name: Checkout
