@@ -8,7 +8,7 @@ import bcrypt
 import fcntl
 
 CALENDAR = "schedule"
-USERS_FILE = Path("/etc/radicale/users")
+USERS_FILE = Path("/var/lib/radicale-auth/users")
 
 
 class Arrange(Enum):

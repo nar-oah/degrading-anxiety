@@ -8,8 +8,8 @@ from icalendar import Alarm, Component, Calendar
 type Events = Iterable[tuple[datetime, datetime]]
 type Rrule = dict[str, str | int]
 WEEK_DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
-CALENDAR = "Voice Calendar"
-URL = "http://127.0.0.1:5232/"
+CALENDAR = "Degrading Anxiety"
+URL = "http://radicale:5232/"
 
 
 @dataclass
