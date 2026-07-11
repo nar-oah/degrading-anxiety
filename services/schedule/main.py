@@ -1,8 +1,9 @@
 from datetime import date, datetime, time, timedelta
 import re
 from celery import Celery
-from new import add_user
-from radicale import Radicale
+from alloc import Alloc
+from new import Task, add_schedule, add_user
+from radicale import REvent, Radicale
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
 celery_app = Celery(
@@ -13,14 +14,25 @@ celery_app = Celery(
 
 
 def get_radicale(token: str) -> Radicale:
-    def is_token() -> bool:
-        return isinstance(token, str) and bool(TOKEN_RE.fullmatch(token))
+    if isinstance(token, str) and bool(TOKEN_RE.fullmatch(token)):
+        add_user(token)
+        return Radicale(token)
+    raise
 
-    def fail() -> None:
-        raise
 
-    add_user(token) if is_token() else fail()
-    return Radicale(token)
+@celery_app.task(name="schedule.add")
+def add_event(token: str, event: REvent) -> None:
+    get_radicale(token).add_event(event)
+
+
+@celery_app.task(name="schedule.delay")
+def mod_schedule(token: str, minute: int) -> None:
+    Alloc(get_radicale(token)).mod_schedule(minute)
+
+
+@celery_app.task(name="schedule.alloc")
+def add_alloc(token: str, tasks: list[Task]) -> None:
+    add_schedule(get_radicale(token), tasks)
 
 
 @celery_app.task(name="schedule.export")
