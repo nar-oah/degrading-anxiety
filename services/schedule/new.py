@@ -42,7 +42,7 @@ def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
         )
 
     def add_event(event: REvent) -> None:
-        radicale.add_event(CALENDAR, event)
+        radicale.add_event(event)
 
     alloc = Alloc(radicale)
     list(map(lambda task: add_event(get_event(task, alloc)), tasks))

@@ -27,16 +27,16 @@ class Radicale:
     def __init__(self, token: str) -> None:
         with DAVClient(url=URL, username=token, password=token) as client:
             self.principal = client.principal()
+            self.calendar = self.principal.calendar(CALENDAR)
 
-    def add_event(self, name: str, event: REvent, rrule: Rrule | None = None) -> None:
+    def add_event(self, event: REvent, rrule: Rrule | None = None) -> None:
         def get_rrule(c: int, i: int, day: str) -> Rrule:
             return {"freq": "WEEKLY", "count": c, "byday": day, "interval": i}
 
-        calendar = self.principal.calendar(name)
         day = WEEK_DAYS[event.dtstart.weekday()]
         repeat = event.repeat
         get_weekly = get_rrule(*repeat, day) if isinstance(repeat, tuple) else None
-        create = calendar.add_event(
+        create: Event = self.calendar.add_event(
             summary=event.summary,
             dtstart=event.dtstart,
             dtend=event.dtend,
@@ -53,11 +53,13 @@ class Radicale:
             component.add_component(alarm)
         create.save()
 
-    def get_events(self, name: str, day: datetime) -> list[Event]:
-        calendar = self.principal.calendar(name)
-        return calendar.search(start=day, end=day.replace(hour=23), expand=True)
+    def get_events(self, day: datetime) -> list[Event]:
+        events = self.calendar.search(start=day, end=day.replace(hour=23), expand=True)
+        if isinstance(events, list):
+            return events
+        raise
 
-    def get_times(self, name: str, day: datetime) -> Events:
+    def get_times(self, day: datetime) -> Events:
         def get_local(dt: datetime) -> datetime:
             return (
                 dt.astimezone().replace(tzinfo=None)
@@ -71,19 +73,14 @@ class Radicale:
                 get_local(event.component.get("dtend").dt),
             )
 
-        return map(lambda x: get_time(x), self.get_events(name, day))
+        return map(lambda x: get_time(x), self.get_events(day))
 
-    def add_calendar(self, name: str = CALENDAR) -> None:
-        self.principal.make_calendar(name=name)
+    def add_calendar(self) -> None:
+        self.principal.make_calendar(name=CALENDAR)
 
     def get_calendar(self, start: datetime, end: datetime) -> bytes:
-        def get_calendar(name: str) -> Calendar:
-            is_calendar: Callable[[Calendar], bool] = lambda c: c.name == name
-            calendars = list(filter(is_calendar, self.principal.get_calendars()))
-            return calendars[0]
-
         def add_head(calendar: Calendar) -> None:
-            calendar.add("prodid", "-//voice-calendar//naroah.top//")
+            calendar.add("prodid", "-//degrading-anxiety//naroah.top//")
             calendar.add("version", "2.0")
 
         def add_vevent(calendar: Calendar, event: Event) -> None:
@@ -91,12 +88,13 @@ class Radicale:
             vevents = filter(lambda c: c.name == "VEVENT", source_calendar.walk())
             list(map(lambda vevent: calendar.add_component(vevent), vevents))
 
-        calendar = get_calendar(CALENDAR)
-        events = calendar.search(event=True, start=start, end=end, expand=False)
+        events = self.calendar.search(event=True, start=start, end=end, expand=False)
         output = Calendar()
         add_head(output)
-        list(map(lambda event: add_vevent(output, event), events))  # type: ignore
-        return output.to_ical()
+        if isinstance(events, list):
+            list(map(lambda event: add_vevent(output, event), events))
+            return output.to_ical()
+        raise
 
 
 if __name__ == "__main__":
@@ -107,4 +105,4 @@ if __name__ == "__main__":
         datetime.now() + timedelta(hours=1 + hour)
     )
     revent = REvent(summary="测试", dtstart=get_dt(), dtend=get_dt(1), alarms=[15, -15])
-    radicale.add_event("test", event=revent)
+    radicale.add_event(event=revent)
