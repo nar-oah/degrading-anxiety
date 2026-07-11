@@ -8,8 +8,6 @@ services:
       - backend
     env_file:
       - .env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.degrading-anxiety.rule=Host(`aws.naroah.top`) && PathPrefix(`/degrading-anxiety`)"
@@ -19,6 +17,18 @@ services:
       - "traefik.http.middlewares.degrading-anxiety-strip.stripprefix.prefixes=/degrading-anxiety"
       - "traefik.http.routers.degrading-anxiety.middlewares=degrading-anxiety-strip"
 
+  schedule:
+    image: ghcr.io/nar-oah/degrading-anxiety/schedule:latest
+    container_name: degrading-anxiety-schedule
+    restart: always
+    networks:
+      - backend
+    env_file:
+      - .env
+
 networks:
   traefik:
+    external: true
+
+  backend:
     external: true
