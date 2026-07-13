@@ -1,4 +1,16 @@
 services:
+  radicale-auth-init:
+    image: alpine:3.22
+    restart: "no"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        touch /auth/users
+        chmod 0644 /auth/users
+    volumes:
+      - radicale-auth:/auth
+
   api:
     image: ghcr.io/nar-oah/degrading-anxiety/api:latest
     container_name: degrading-anxiety-api
@@ -25,6 +37,52 @@ services:
       - backend
     env_file:
       - .env
+    volumes:
+      - radicale-auth:/auth
+    depends_on:
+      radicale:
+        condition: service_started
+
+  radicale:
+    image: kozea/radicale:3.7
+    container_name: degrading-anxiety-radicale
+    restart: always
+    init: true
+
+    depends_on:
+      radicale-auth-init:
+        condition: service_completed_successfully
+
+    networks:
+      - traefik
+      - backend
+
+    volumes:
+      - ./services/radicale/config:/etc/radicale/config:ro
+      - radicale-auth:/auth:ro
+      - radicale-data:/var/lib/radicale/collections
+
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.degrading-anxiety-radicale.rule=Host(`aws.naroah.top`) && PathPrefix(`/degrading-anxiety/radicale`)"
+      - "traefik.http.routers.degrading-anxiety-radicale.priority=100"
+      - "traefik.http.routers.degrading-anxiety-radicale.entrypoints=websecure"
+      - "traefik.http.routers.degrading-anxiety-radicale.tls.certresolver=letsencrypt"
+
+      - "traefik.http.routers.degrading-anxiety-radicale.service=degrading-anxiety-radicale"
+      - "traefik.http.services.degrading-anxiety-radicale.loadbalancer.server.port=5232"
+
+      - "traefik.http.middlewares.degrading-anxiety-radicale-strip.stripprefix.prefixes=/degrading-anxiety/radicale"
+      - "traefik.http.middlewares.degrading-anxiety-radicale-script.headers.customrequestheaders.X-Script-Name=/degrading-anxiety/radicale"
+      - "traefik.http.routers.degrading-anxiety-radicale.middlewares=degrading-anxiety-radicale-strip,degrading-anxiety-radicale-script"
+
+volumes:
+  radicale-auth:
+    name: degrading-anxiety-radicale-auth
+
+  radicale-data:
+    name: degrading-anxiety-radicale-data
 
 networks:
   traefik:
