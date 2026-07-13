@@ -1,16 +1,4 @@
 services:
-  radicale-auth-init:
-    image: alpine:3.22
-    restart: "no"
-    command:
-      - /bin/sh
-      - -c
-      - |
-        touch /auth/users
-        chmod 0644 /auth/users
-    volumes:
-      - radicale-auth:/auth
-
   api:
     image: ghcr.io/nar-oah/degrading-anxiety/api:latest
     container_name: degrading-anxiety-api
@@ -32,7 +20,7 @@ services:
   schedule:
     image: ghcr.io/nar-oah/degrading-anxiety/schedule:latest
     container_name: degrading-anxiety-schedule
-    restart: always
+    restart: unless-stopped
     networks:
       - backend
     env_file:
@@ -41,26 +29,38 @@ services:
       - radicale-auth:/auth
     depends_on:
       radicale:
-        condition: service_started
+        condition: service_healthy
 
   radicale:
-    image: kozea/radicale:3.7
+    image: ghcr.io/nar-oah/degrading-anxiety/radicale:latest
     container_name: degrading-anxiety-radicale
-    restart: always
+    restart: unless-stopped
     init: true
 
-    depends_on:
-      radicale-auth-init:
-        condition: service_completed_successfully
+    security_opt:
+      - no-new-privileges:true
 
     networks:
       - traefik
       - backend
 
     volumes:
-      - ./services/radicale/config:/etc/radicale/config:ro
-      - radicale-auth:/auth:ro
-      - radicale-data:/var/lib/radicale/collections
+      - radicale-auth:/auth
+      - radicale-data:/var/lib/radicale
+
+    healthcheck:
+      test:
+        - CMD
+        - /app/bin/python
+        - -c
+        - >
+          import socket;
+          connection = socket.create_connection(("127.0.0.1", 5232), 2);
+          connection.close()
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
 
     labels:
       - "traefik.enable=true"
@@ -68,6 +68,7 @@ services:
       - "traefik.http.routers.degrading-anxiety-radicale.rule=Host(`aws.naroah.top`) && PathPrefix(`/degrading-anxiety/radicale`)"
       - "traefik.http.routers.degrading-anxiety-radicale.priority=100"
       - "traefik.http.routers.degrading-anxiety-radicale.entrypoints=websecure"
+      - "traefik.http.routers.degrading-anxiety-radicale.tls=true"
       - "traefik.http.routers.degrading-anxiety-radicale.tls.certresolver=letsencrypt"
 
       - "traefik.http.routers.degrading-anxiety-radicale.service=degrading-anxiety-radicale"
