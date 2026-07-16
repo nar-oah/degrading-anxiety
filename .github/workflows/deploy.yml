@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "services/**"
+      - "backend/**"
       - "compose.prod.yml"
       - ".github/workflows/deploy.yml"
 
@@ -28,15 +28,18 @@ jobs:
       matrix:
         service:
           - name: api
-            path: services/api
+            path: backend/api
+            context: backend
             image: ghcr.io/${{ github.repository }}/api:latest
 
           - name: schedule
-            path: services/schedule
+            path: backend/schedule
+            context: backend
             image: ghcr.io/${{ github.repository }}/schedule:latest
 
           - name: radicale
-            path: services/radicale
+            path: backend/radicale
+            context: backend/radicale
             image: ghcr.io/${{ github.repository }}/radicale:latest
 
     steps:
@@ -50,7 +53,11 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build image
-        run: docker build -t "${{ matrix.service.image }}" "${{ matrix.service.path }}"
+        run: |
+          docker build \
+            -f "${{ matrix.service.path }}/Dockerfile" \
+            -t "${{ matrix.service.image }}" \
+            "${{ matrix.service.context }}"
 
       - name: Push image
         run: docker push "${{ matrix.service.image }}"
