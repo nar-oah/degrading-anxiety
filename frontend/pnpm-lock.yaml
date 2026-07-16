@@ -15,8 +15,41 @@ importers:
         specifier: ^66.7.3
         version: 66.7.5(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0))
 
-  apps/desktop:
+  app:
     devDependencies:
+      '@sveltejs/adapter-static':
+        specifier: ^3.0.10
+        version: 3.0.10(@sveltejs/kit@2.69.1(@sveltejs/vite-plugin-svelte@7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.56.4)(typescript@6.0.3)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))
+      '@sveltejs/kit':
+        specifier: ^2.63.0
+        version: 2.69.1(@sveltejs/vite-plugin-svelte@7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.56.4)(typescript@6.0.3)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0))
+      '@sveltejs/package':
+        specifier: ^2.5.8
+        version: 2.5.8(svelte@5.56.4)(typescript@6.0.3)
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^7.1.2
+        version: 7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0))
+      publint:
+        specifier: ^0.3.21
+        version: 0.3.21
+      svelte:
+        specifier: ^5.56.1
+        version: 5.56.4
+      svelte-check:
+        specifier: ^4.6.0
+        version: 4.7.1(picomatch@4.0.5)(svelte@5.56.4)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vite:
+        specifier: ^8.0.16
+        version: 8.1.3(esbuild@0.28.1)(jiti@2.7.0)
+
+  desktop:
+    devDependencies:
+      '@degrading-anxiety/app':
+        specifier: workspace:*
+        version: link:../app
       '@sveltejs/adapter-static':
         specifier: ^3.0.10
         version: 3.0.10(@sveltejs/kit@2.69.1(@sveltejs/vite-plugin-svelte@7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.56.4)(typescript@6.0.3)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))
@@ -42,8 +75,11 @@ importers:
         specifier: ^8.0.16
         version: 8.1.3(esbuild@0.28.1)(jiti@2.7.0)
 
-  apps/web:
+  web:
     devDependencies:
+      '@degrading-anxiety/app':
+        specifier: workspace:*
+        version: link:../app
       '@sveltejs/adapter-cloudflare':
         specifier: ^7.2.8
         version: 7.2.9(@sveltejs/kit@2.69.1(@sveltejs/vite-plugin-svelte@7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))(svelte@5.56.4)(typescript@6.0.3)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0)))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1))
@@ -630,6 +666,10 @@ packages:
   '@poppinss/exception@1.2.3':
     resolution: {integrity: sha512-dCED+QRChTVatE9ibtoaxc+WkdzOSjYTKi/+uacHWIsfodVfpsueo3+DKpgU5Px8qXjgmXkSvhXvSCz3fnP9lw==}
 
+  '@publint/pack@0.1.5':
+    resolution: {integrity: sha512-edgyN2pP07uXiP4tJs0s8KVmU8M8i60YPbbI0/WDeok1mIJHRXz+CgD8I0nelwDkoCh3EWL/G5kGfbuHjsdbvw==}
+    engines: {node: '>=18'}
+
   '@quansync/fs@1.0.0':
     resolution: {integrity: sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ==}
 
@@ -776,6 +816,13 @@ packages:
   '@sveltejs/load-config@0.2.0':
     resolution: {integrity: sha512-1LgZ/qUqSoq+QorD83lk2hka79Px0wXNW2q5V1nZlxGhQgw1jrsIbVz5YiCeucVLo4XvFLjXukUaQjIiqowkcg==}
     engines: {node: '>= 18.0.0'}
+
+  '@sveltejs/package@2.5.8':
+    resolution: {integrity: sha512-zeBbsXYvHiBu56v4gJaGQoEHzg96w0E1j3dOMX8vo56s6vI5eQ57ZEZhudjwjnegnVitRRu5MrmhO0eNvaonIw==}
+    engines: {node: ^16.14 || >=18}
+    hasBin: true
+    peerDependencies:
+      svelte: ^3.44.0 || ^4.0.0 || ^5.0.0-next.1
 
   '@sveltejs/vite-plugin-svelte@7.1.4':
     resolution: {integrity: sha512-HJ0n7DysuQQBXxGvpV9KeJrta44w8OovdQ1SS6IsDQo6lYdwzolKQQca3+244V2GrZEo0hP6QPplKabZHck33A==}
@@ -994,6 +1041,9 @@ packages:
   css-tree@3.2.1:
     resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
+
+  dedent-js@1.0.1:
+    resolution: {integrity: sha512-OUepMozQULMLUmhxS95Vudo0jb0UchLimi3+pQ2plj61Fcy8axbP9hbiD4Sz6DPqn6XG3kfmziVfQ1rSys5AJQ==}
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -1221,6 +1271,11 @@ packages:
     resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  publint@0.3.21:
+    resolution: {integrity: sha512-OqejcnMV6E9zel2oCrUOJEiiFkGiAAni0A6ibfQNh1k9Gu5z4F+Yso8lllam7AzmV6Do0vp7u3UpZNRBwuXaHQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   quansync@1.0.0:
     resolution: {integrity: sha512-5xZacEEufv3HSTPQuchrvV6soaiACMFnq1H8wkVioctoH3TRha9Sz66lOxRwPK/qZj7HPiSveih9yAyh98gvqA==}
 
@@ -1248,6 +1303,9 @@ packages:
   sade@1.8.1:
     resolution: {integrity: sha512-xal3CZX1Xlo/k4ApwCFrHVACi9fBqJ7V+mwhBsuf/1IOKbBy098Fex+Wa/5QMubw09pSZ/u8EY8PWgevJsXp1A==}
     engines: {node: '>=6'}
+
+  scule@1.3.0:
+    resolution: {integrity: sha512-6FtHJEvt+pVMIB9IBY+IcCJ6Z5f1iQnytgyfKMhDKgmzYG+TeH/wx1y3l27rshSbLiSanrR9ffZDrEsmjlQF2g==}
 
   semver@7.8.5:
     resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
@@ -1280,6 +1338,12 @@ packages:
     peerDependencies:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: '>=5.0.0'
+
+  svelte2tsx@0.7.57:
+    resolution: {integrity: sha512-nQo0xEfUpSVjfkxan2UmC6Wl9UZVe9+/pglUiyBNMJ7KDQ9DDooucmXdToBOvzSfgYjj/kMYwf6CTTDz/z048w==}
+    peerDependencies:
+      svelte: ^3.55 || ^4.0.0-next.0 || ^4.0 || ^5.0.0-next.0
+      typescript: ^4.9.4 || ^5.0.0 || ^6.0.0
 
   svelte@5.56.4:
     resolution: {integrity: sha512-/d0QHehmRuJW8gVz395MTkPcPozxzdjBMBE8oEYGz8O3b9KTMzzQ9ZHJQLuFKOHOPQbU6kx/X4iid/EBBzH7iw==}
@@ -1815,6 +1879,10 @@ snapshots:
 
   '@poppinss/exception@1.2.3': {}
 
+  '@publint/pack@0.1.5':
+    dependencies:
+      tinyexec: 1.2.4
+
   '@quansync/fs@1.0.0':
     dependencies:
       quansync: 1.0.0
@@ -1912,6 +1980,17 @@ snapshots:
       typescript: 6.0.3
 
   '@sveltejs/load-config@0.2.0': {}
+
+  '@sveltejs/package@2.5.8(svelte@5.56.4)(typescript@6.0.3)':
+    dependencies:
+      chokidar: 5.0.0
+      kleur: 4.1.5
+      sade: 1.8.1
+      semver: 7.8.5
+      svelte: 5.56.4
+      svelte2tsx: 0.7.57(svelte@5.56.4)(typescript@6.0.3)
+    transitivePeerDependencies:
+      - typescript
 
   '@sveltejs/vite-plugin-svelte@7.1.4(svelte@5.56.4)(vite@8.1.3(esbuild@0.28.1)(jiti@2.7.0))':
     dependencies:
@@ -2146,6 +2225,8 @@ snapshots:
       mdn-data: 2.27.1
       source-map-js: 1.2.1
 
+  dedent-js@1.0.1: {}
+
   deepmerge@4.3.1: {}
 
   defu@6.1.7: {}
@@ -2376,6 +2457,13 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
+  publint@0.3.21:
+    dependencies:
+      '@publint/pack': 0.1.5
+      package-manager-detector: 1.7.0
+      picocolors: 1.1.1
+      sade: 1.8.1
+
   quansync@1.0.0: {}
 
   readdirp@4.1.2: {}
@@ -2410,6 +2498,8 @@ snapshots:
   sade@1.8.1:
     dependencies:
       mri: 1.2.0
+
+  scule@1.3.0: {}
 
   semver@7.8.5: {}
 
@@ -2468,6 +2558,13 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - picomatch
+
+  svelte2tsx@0.7.57(svelte@5.56.4)(typescript@6.0.3):
+    dependencies:
+      dedent-js: 1.0.1
+      scule: 1.3.0
+      svelte: 5.56.4
+      typescript: 6.0.3
 
   svelte@5.56.4:
     dependencies:
