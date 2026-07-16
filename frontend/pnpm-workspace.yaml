@@ -1,6 +1,7 @@
 packages:
-  - apps/*
-  - packages/*
+  - "web"
+  - "desktop"
+  - "app"
 allowBuilds:
   esbuild: true
   sharp: true

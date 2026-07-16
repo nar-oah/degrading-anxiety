@@ -1,10 +1,13 @@
 {
-  "name": "degrading-anxiety",
+  "name": "degrading-anxiety-frontend",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:web": "pnpm --filter web dev",
-    "dev:desktop": "pnpm --filter desktop dev"
+    "dev:web": "pnpm --filter @degrading-anxiety/web dev",
+    "dev:desktop": "pnpm --filter @degrading-anxiety/desktop tauri dev",
+    "build:web": "pnpm --filter @degrading-anxiety/web... build",
+    "build:desktop": "pnpm --filter @degrading-anxiety/desktop... tauri build",
+    "check": "pnpm -r check"
   },
   "devDependencies": {
     "@unocss/extractor-svelte": "^66.7.3",
