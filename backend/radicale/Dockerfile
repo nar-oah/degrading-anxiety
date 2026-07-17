@@ -5,8 +5,8 @@ USER root
 RUN apk add --no-cache su-exec \
   && mkdir -p /etc/radicale
 
-COPY config /etc/radicale/config
-COPY entrypoint.sh /usr/local/bin/radicale-entrypoint
+COPY radicale/config /etc/radicale/config
+COPY radicale/entrypoint.sh /usr/local/bin/radicale-entrypoint
 
 RUN chmod 0644 /etc/radicale/config \
   && chmod 0755 /usr/local/bin/radicale-entrypoint

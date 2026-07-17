@@ -1,0 +1,16 @@
+[project]
+name = "schedule"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "contracts",
+  "bcrypt>=5.0.0",
+  "caldav>=3.2.1",
+  "celery[redis]>=5.6.3",
+  "intervaltree>=3.2.1",
+]
+
+[tool.uv.sources]
+contracts = { workspace = true }

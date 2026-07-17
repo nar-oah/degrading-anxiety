@@ -1,0 +1,11 @@
+[project]
+name = "degrading-anxiety-backend"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["api", "schedule", "contracts"]
+
+[tool.uv.sources]
+contracts = { workspace = true }
