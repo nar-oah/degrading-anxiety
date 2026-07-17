@@ -27,27 +27,16 @@ jobs:
     strategy:
       matrix:
         service:
-          - name: api
-            path: backend/api
-            context: backend
-            image: ghcr.io/${{ github.repository }}/api:latest
-
-          - name: schedule
-            path: backend/schedule
-            context: backend
-            image: ghcr.io/${{ github.repository }}/schedule:latest
-
-          - name: radicale
-            path: backend/radicale
-            context: backend/radicale
-            image: ghcr.io/${{ github.repository }}/radicale:latest
+          - api
+          - schedule
+          - radicale
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Check Dockerfile
-        run: test -f "${{ matrix.service.path }}/Dockerfile"
+        run: test -f "backend/${{ matrix.service }}/Dockerfile"
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -55,12 +44,12 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -f "${{ matrix.service.path }}/Dockerfile" \
-            -t "${{ matrix.service.image }}" \
-            "${{ matrix.service.context }}"
+            -f "backend/${{ matrix.service }}/Dockerfile" \
+            -t "ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest" \
+            backend
 
       - name: Push image
-        run: docker push "${{ matrix.service.image }}"
+        run: docker push "ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest"
 
   deploy:
     runs-on: ubuntu-latest
