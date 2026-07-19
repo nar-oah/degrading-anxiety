@@ -1,8 +1,11 @@
+from datetime import date
 from celery import Celery
 from celery.result import AsyncResult
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify
+from flask.typing import ResponseReturnValue as ReturnValue
 from pydantic import BaseModel, ValidationError
 from degrading_anxiety_contracts.schedule import REvent, TaskList
+from secrets import token_urlsafe
 
 app = Flask(__name__)
 celery_app = Celery(
@@ -12,16 +15,14 @@ celery_app = Celery(
 )
 
 
-def add_task(name: str, value: BaseModel) -> tuple[Response, int]:
-    def get_token() -> str:
-        return request.headers["Authorization"].removeprefix("Bearer ")
-
+def add_task(name: str, token: str, value: BaseModel | int | date) -> ReturnValue:
+    arg = value.model_dump(mode="json") if isinstance(value, BaseModel) else value
     result: AsyncResult = celery_app.send_task(
         name,
-        args=[get_token(), value.model_dump(mode="json")],
+        args=[token, arg],
         queue="schedule",
     )
-    return jsonify({"task_id": result.id}), 202
+    return jsonify(result.id), 202
 
 
 @app.errorhandler(ValidationError)
@@ -33,14 +34,29 @@ def get_validation(error: ValidationError) -> Response:
     )
 
 
-@app.post("/schedule/add")
-def add_event() -> tuple[Response, int]:
-    return add_task("schedule.add", REvent.model_validate(request.get_json()))
+@app.get("/token")
+def create_token() -> str:
+    return token_urlsafe(32)
 
 
-@app.post("/schedule/alloc")
-def add_alloc() -> tuple[Response, int]:
-    return add_task("schedule.alloc", TaskList.model_validate(request.get_json()))
+@app.post("/add")
+def add_event(token: str, event: REvent) -> ReturnValue:
+    return add_task("schedule.add", token, event)
+
+
+@app.post("/delay")
+def mod_schedule(token: str, minute: int) -> ReturnValue:
+    return add_task("schedule.delay", token, minute)
+
+
+@app.post("/alloc")
+def add_alloc(token: str, tasks: TaskList) -> ReturnValue:
+    return add_task("schedule.alloc", token, tasks)
+
+
+@app.post("/export")
+def get_export(token: str, date: date) -> ReturnValue:
+    return add_task("schedule.add", token, date)
 
 
 def main() -> None:
