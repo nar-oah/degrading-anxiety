@@ -37,7 +37,7 @@ def add_alloc(token: str, tasks: TaskList) -> None:
 
 
 @celery_app.task(name="schedule.export")
-def get_export(token: str, date: date) -> bytes:
+def get_export(token: str, day: str) -> bytes:
     radicale = get_radicale(token)
-    start = datetime.combine(date, time.min)
+    start = datetime.combine(date.fromisoformat(day), time.min)
     return radicale.get_calendar(start, start + timedelta(days=1))
