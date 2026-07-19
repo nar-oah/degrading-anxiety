@@ -36,6 +36,7 @@ name = "api"
 version = "0.1.0"
 source = { virtual = "api" }
 dependencies = [
+    { name = "celery", extra = ["redis"] },
     { name = "degrading-anxiety-contracts" },
     { name = "flask" },
     { name = "gunicorn" },
@@ -43,6 +44,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "celery", extras = ["redis"], specifier = ">=5.6.3" },
     { name = "degrading-anxiety-contracts", editable = "contracts" },
     { name = "flask", specifier = ">=3.1.3" },
     { name = "gunicorn", specifier = ">=26.0.0" },

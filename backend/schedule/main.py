@@ -2,8 +2,9 @@ from datetime import date, datetime, time, timedelta
 import re
 from celery import Celery
 from alloc import Alloc
-from new import Task, add_schedule, add_user
-from radicale import REvent, Radicale
+from new import add_schedule, add_user
+from radicale import Radicale
+from degrading_anxiety_contracts.schedule import REvent, TaskList
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
 celery_app = Celery(
@@ -31,8 +32,8 @@ def mod_schedule(token: str, minute: int) -> None:
 
 
 @celery_app.task(name="schedule.alloc")
-def add_alloc(token: str, tasks: list[Task]) -> None:
-    add_schedule(get_radicale(token), tasks)
+def add_alloc(token: str, tasks: TaskList) -> None:
+    add_schedule(get_radicale(token), tasks.root)
 
 
 @celery_app.task(name="schedule.export")

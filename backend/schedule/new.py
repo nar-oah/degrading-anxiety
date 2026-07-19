@@ -1,27 +1,13 @@
 from collections.abc import Callable
-from dataclasses import dataclass
-from enum import Enum
 from alloc import Alloc
-from radicale import REvent, Radicale
+from radicale import Radicale
 from pathlib import Path
 import bcrypt
 import fcntl
+from degrading_anxiety_contracts.schedule import Task, Arrange, REvent
 
 CALENDAR = "schedule"
 USERS_FILE = Path("/auth/users")
-
-
-class Arrange(Enum):
-    EARLY = "early"
-    LATE = "late"
-    NORMAL = "normal"
-
-
-@dataclass
-class Task:
-    description: str
-    duration: int
-    arrange: Arrange = Arrange.NORMAL
 
 
 def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:

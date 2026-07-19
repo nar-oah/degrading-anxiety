@@ -1,26 +1,15 @@
 from collections.abc import Iterable
-from dataclasses import dataclass, field
 from caldav.davclient import DAVClient
 from caldav import Event
 from datetime import datetime, timedelta, tzinfo
 from icalendar import Alarm, Component, Calendar
+from degrading_anxiety_contracts.schedule import REvent
 
 type Events = Iterable[tuple[datetime, datetime]]
 type Rrule = dict[str, str | int]
 WEEK_DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 CALENDAR = "Degrading Anxiety"
 URL = "http://radicale:5232/"
-
-
-@dataclass
-class REvent:
-    summary: str
-    dtstart: datetime
-    dtend: datetime
-    location: str = ""
-    description: str = ""
-    alarms: list[int] = field(default_factory=lambda: [15])
-    repeat: tuple[int, int] | None = None
 
 
 class Radicale:

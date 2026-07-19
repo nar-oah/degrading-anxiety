@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterable
 from datetime import date, datetime, time, timedelta
 from caldav import Event
 from intervaltree import Interval, IntervalTree
-from new import Arrange
+from degrading_anxiety_contracts.schedule import Arrange
 from radicale import Radicale
 
 
