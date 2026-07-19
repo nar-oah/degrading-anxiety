@@ -65,3 +65,5 @@ src-tauri/.tauri/
 .cache/
 .temp/
 tmp/
+__pycache__/
+*.py[cod]
