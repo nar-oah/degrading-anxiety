@@ -44,5 +44,8 @@
   },
   "keywords": [
     "svelte"
-  ]
+  ],
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  }
 }
