@@ -12,11 +12,10 @@ celery_app = Celery(
 )
 
 
-def get_token() -> str:
-    return request.headers["Authorization"].removeprefix("Bearer ")
-
-
 def add_task(name: str, value: BaseModel) -> tuple[Response, int]:
+    def get_token() -> str:
+        return request.headers["Authorization"].removeprefix("Bearer ")
+
     result: AsyncResult = celery_app.send_task(
         name,
         args=[get_token(), value.model_dump(mode="json")],
