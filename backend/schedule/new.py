@@ -12,9 +12,11 @@ USERS_FILE = Path("/auth/users")
 
 def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
     def get_event(task: Task, alloc: Alloc) -> REvent:
+        dtstart, dtend = alloc.get_schedule(task.duration, task.arrange)
         return REvent(
-            task.description,
-            *alloc.get_schedule(task.duration, task.arrange),
+            summary=task.description,
+            dtstart=dtstart,
+            dtend=dtend,
             description=task.description,
             alarms=[0] if task.arrange == Arrange.NORMAL else [15],
         )
@@ -50,4 +52,8 @@ def add_user(token: str) -> None:
 
 
 if __name__ == "__main__":
-    add_schedule(Radicale("test"), [Task("test", 10), Task("test2", 20)])
+    tasks = [
+        Task(description="test", duration=10),
+        Task(description="test2", duration=20),
+    ]
+    add_schedule(Radicale("test"), tasks)
