@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "api:generate": "openapi-typescript https://aws.naroah.top/degrading-anxiety/openapi.json -o app/src/lib/api/schema.d.ts",
     "dev:web": "pnpm --filter @degrading-anxiety/web dev",
     "dev:desktop": "pnpm --filter @degrading-anxiety/desktop tauri dev",
     "build:web": "pnpm --filter @degrading-anxiety/web... build",
@@ -11,6 +12,7 @@
   },
   "devDependencies": {
     "@unocss/extractor-svelte": "^66.7.3",
+    "openapi-typescript": "^7.13.0",
     "unocss": "^66.7.3"
   }
 }
