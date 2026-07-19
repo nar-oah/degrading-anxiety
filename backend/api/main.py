@@ -36,7 +36,7 @@ def get_validation(request: Request, error: RequestValidationError) -> JSONRespo
 
 
 @app.get("/token", response_model=str)
-def create_token() -> str:
+def get_token() -> str:
     return token_urlsafe(32)
 
 
