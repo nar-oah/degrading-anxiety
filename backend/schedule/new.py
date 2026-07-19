@@ -1,42 +1,22 @@
 from collections.abc import Callable
-from dataclasses import dataclass
-from enum import Enum
 from alloc import Alloc
-from radicale import REvent, Radicale
+from radicale import Radicale
 from pathlib import Path
 import bcrypt
 import fcntl
+from degrading_anxiety_contracts.schedule import Task, Arrange, REvent
 
 CALENDAR = "schedule"
 USERS_FILE = Path("/auth/users")
 
 
-class Arrange(Enum):
-    EARLY = "early"
-    LATE = "late"
-    NORMAL = "normal"
-
-    @property
-    def key(self) -> Callable:
-        return {
-            Arrange.EARLY: lambda x: x.begin,
-            Arrange.LATE: lambda x: -x.begin,
-            Arrange.NORMAL: lambda x: x.end - x.begin,
-        }[self]
-
-
-@dataclass
-class Task:
-    description: str
-    duration: int
-    arrange: Arrange = Arrange.NORMAL
-
-
 def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
     def get_event(task: Task, alloc: Alloc) -> REvent:
+        dtstart, dtend = alloc.get_schedule(task.duration, task.arrange)
         return REvent(
-            task.description,
-            *alloc.get_schedule(task.duration, task.arrange.key),
+            summary=task.description,
+            dtstart=dtstart,
+            dtend=dtend,
             description=task.description,
             alarms=[0] if task.arrange == Arrange.NORMAL else [15],
         )
@@ -72,4 +52,8 @@ def add_user(token: str) -> None:
 
 
 if __name__ == "__main__":
-    add_schedule(Radicale("test"), [Task("test", 10), Task("test2", 20)])
+    tasks = [
+        Task(description="test", duration=10),
+        Task(description="test2", duration=20),
+    ]
+    add_schedule(Radicale("test"), tasks)

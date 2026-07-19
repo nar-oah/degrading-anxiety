@@ -14,4 +14,4 @@ COPY --from=builder /app/schedule /app/schedule
 ENV PATH="/app/.venv/bin:$PATH"
 WORKDIR /app/schedule
 
-CMD ["celery", "-A", "main:celery_app", "worker", "-Q", "pdf", "--loglevel=info"]
+CMD ["celery", "-A", "main:celery_app", "worker", "-Q", "schedule", "--loglevel=info"]
