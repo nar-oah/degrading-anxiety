@@ -2,7 +2,7 @@
 	import { createApi, type Fetch } from './api/index.js';
 
 	let { fetch }: { fetch: Fetch } = $props();
-	const api = createApi(fetch);
+	const api = $derived(createApi(fetch));
 </script>
 
 <h1>Welcome to SvelteKit</h1>
