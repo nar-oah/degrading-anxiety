@@ -4,10 +4,11 @@
   "type": "module",
   "scripts": {
     "api:generate": "openapi-typescript https://aws.naroah.top/degrading-anxiety/openapi.json -o app/src/lib/api/schema.d.ts",
-    "dev:web": "pnpm --filter @degrading-anxiety/web dev",
-    "dev:desktop": "pnpm --filter @degrading-anxiety/desktop tauri dev",
-    "build:web": "pnpm --filter @degrading-anxiety/web... build",
-    "build:desktop": "pnpm --filter @degrading-anxiety/desktop... tauri build",
+    "app:build": "pnpm --filter @degrading-anxiety/app prepack",
+    "dev:web": "pnpm app:build && pnpm --filter @degrading-anxiety/web dev",
+    "dev:desktop": "pnpm app:build && pnpm --filter @degrading-anxiety/desktop tauri dev",
+    "build:web": "pnpm app:build && pnpm --filter @degrading-anxiety/web build",
+    "build:desktop": "pnpm app:build && pnpm --filter @degrading-anxiety/desktop tauri build",
     "check": "pnpm -r check"
   },
   "devDependencies": {
