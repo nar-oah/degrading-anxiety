@@ -1,7 +1,7 @@
 from datetime import date
 from celery import Celery
 from celery.result import AsyncResult
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,7 +17,7 @@ celery_app = Celery(
 )
 
 
-def add_task(name: str, token: str, value: BaseModel | int | date) -> str:
+def add_task(name: str, token: str, value: BaseModel | int | date) -> str | None:
     arg = value.model_dump(mode="json") if isinstance(value, BaseModel) else value
     result: AsyncResult = celery_app.send_task(
         name,
@@ -28,7 +28,7 @@ def add_task(name: str, token: str, value: BaseModel | int | date) -> str:
 
 
 @app.exception_handler(RequestValidationError)
-def get_validation(request: Request, error: RequestValidationError) -> JSONResponse:
+def get_validation(error: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         content=jsonable_encoder(error.errors()),
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -41,26 +41,26 @@ def get_token() -> str:
 
 
 @app.post("/add", response_model=str, status_code=status.HTTP_202_ACCEPTED)
-def add_event(token: str, event: REvent) -> str:
+def add_event(token: str, event: REvent) -> str | None:
     return add_task("schedule.add", token, event)
 
 
 @app.post("/delay", response_model=str, status_code=status.HTTP_202_ACCEPTED)
-def mod_schedule(token: str, minute: int) -> str:
+def mod_schedule(token: str, minute: int) -> str | None:
     return add_task("schedule.delay", token, minute)
 
 
 @app.post("/alloc", response_model=str, status_code=status.HTTP_202_ACCEPTED)
-def add_alloc(token: str, tasks: TaskList) -> str:
+def add_alloc(token: str, tasks: TaskList) -> str | None:
     return add_task("schedule.alloc", token, tasks)
 
 
 @app.post("/export", response_model=str, status_code=status.HTTP_202_ACCEPTED)
-def add_export(token: str, date: date) -> str:
+def add_export(token: str, date: date) -> str | None:
     return add_task("schedule.export", token, date)
 
 
-@app.get("/export/{id}", responses={202: {"description": "Export pending"}})
+@app.get("/export", responses={202: {"description": "Export pending"}})
 def get_export(id: str) -> Response:
     result = AsyncResult(id, app=celery_app)
     return (
