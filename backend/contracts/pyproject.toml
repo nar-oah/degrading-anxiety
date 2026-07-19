@@ -1,7 +1,8 @@
 [project]
-name = "contracts"
+name = "degrading-anxiety-contracts"
 version = "0.1.0"
 description = "Add your description here"
+readme = "README.md"
 authors = [
     { name = "naroah", email = "givefacegod@gmail.com" }
 ]
