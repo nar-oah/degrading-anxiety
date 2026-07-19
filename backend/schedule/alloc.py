@@ -2,6 +2,7 @@ from collections.abc import Callable, Iterable
 from datetime import date, datetime, time, timedelta
 from caldav import Event
 from intervaltree import Interval, IntervalTree
+from new import Arrange
 from radicale import Radicale
 
 
@@ -19,10 +20,17 @@ class Alloc:
         for start, end in get_pieces():
             self.slots.chop(start, end)
 
-    def get_schedule(
-        self, dur: int, key: Callable[[Interval], int] = lambda x: x.end - x.begin
-    ) -> tuple[datetime, datetime]:
-        def get_alloc() -> tuple[int, int]:
+    def get_schedule(self, dur: int, range=Arrange.NORMAL) -> tuple[datetime, datetime]:
+        def get_key() -> Callable[[Interval], int]:
+            match range:
+                case Arrange.EARLY:
+                    return lambda x: x.begin
+                case Arrange.LATE:
+                    return lambda x: -x.begin
+                case Arrange.NORMAL:
+                    return lambda x: x.end - x.begin
+
+        def get_alloc(key: Callable[[Interval], int]) -> tuple[int, int]:
             is_alloc: Callable[[Interval], bool] = lambda x: (x.end - x.begin) >= dur
             start: int = sorted(filter(is_alloc, self.slots), key=key)[0].begin
             return start, start + dur
@@ -30,7 +38,7 @@ class Alloc:
         def get_time(time: int) -> datetime:
             return self.day.replace(hour=time // 60, minute=time % 60)
 
-        start, end = get_alloc()
+        start, end = get_alloc(get_key())
         self.slots.chop(start, end + 1)
         return get_time(start), get_time(end)
 

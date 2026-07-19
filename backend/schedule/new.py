@@ -16,14 +16,6 @@ class Arrange(Enum):
     LATE = "late"
     NORMAL = "normal"
 
-    @property
-    def key(self) -> Callable:
-        return {
-            Arrange.EARLY: lambda x: x.begin,
-            Arrange.LATE: lambda x: -x.begin,
-            Arrange.NORMAL: lambda x: x.end - x.begin,
-        }[self]
-
 
 @dataclass
 class Task:
@@ -36,7 +28,7 @@ def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
     def get_event(task: Task, alloc: Alloc) -> REvent:
         return REvent(
             task.description,
-            *alloc.get_schedule(task.duration, task.arrange.key),
+            *alloc.get_schedule(task.duration, task.arrange),
             description=task.description,
             alarms=[0] if task.arrange == Arrange.NORMAL else [15],
         )
