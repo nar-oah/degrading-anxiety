@@ -2,7 +2,7 @@ from datetime import date
 from celery import Celery
 from celery.exceptions import TimeoutError as CeleryTimeoutError
 from celery.result import AsyncResult
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -29,7 +29,7 @@ def add_task(name: str, token: str, value: BaseModel | int | str) -> AsyncResult
 
 
 @app.exception_handler(RequestValidationError)
-def get_validation(error: RequestValidationError) -> JSONResponse:
+def get_validation(_: Request, error: RequestValidationError) -> JSONResponse:
     return JSONResponse(
         content=jsonable_encoder(error.errors()),
         status_code=status.HTTP_400_BAD_REQUEST,
