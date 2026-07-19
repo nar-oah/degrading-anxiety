@@ -21,17 +21,17 @@ def get_radicale(token: str) -> Radicale:
     raise
 
 
-@celery_app.task(name="schedule.add")
+@celery_app.task(name="schedule.add", pydantic=True, ignore_result=True)
 def add_event(token: str, event: REvent) -> None:
     get_radicale(token).add_event(event)
 
 
-@celery_app.task(name="schedule.delay")
+@celery_app.task(name="schedule.delay", ignore_result=True)
 def mod_schedule(token: str, minute: int) -> None:
     Alloc(get_radicale(token)).mod_schedule(minute)
 
 
-@celery_app.task(name="schedule.alloc")
+@celery_app.task(name="schedule.alloc", pydantic=True, ignore_result=True)
 def add_alloc(token: str, tasks: TaskList) -> None:
     add_schedule(get_radicale(token), tasks.root)
 
