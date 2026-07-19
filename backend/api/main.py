@@ -55,8 +55,18 @@ def add_alloc(token: str, tasks: TaskList) -> ReturnValue:
 
 
 @app.post("/export")
-def get_export(token: str, date: date) -> ReturnValue:
-    return add_task("schedule.add", token, date)
+def add_export(token: str, date: date) -> ReturnValue:
+    return add_task("schedule.export", token, date)
+
+
+@app.get("/export/<id>")
+def get_export(id: str) -> ReturnValue:
+    result = AsyncResult(id, app=celery_app)
+    return (
+        app.response_class(result.get(), mimetype="text/calendar")
+        if result.ready()
+        else ("", 202)
+    )
 
 
 def main() -> None:
