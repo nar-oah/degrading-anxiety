@@ -89,7 +89,10 @@ export const createApi = ({ baseUrl = API_BASE_URL, fetch: fetcher = globalThis.
 		postJson<AddEventResponse>(fetcher, makeUrl(baseUrl, '/add', { token }), event),
 
 	modSchedule: (token: ModScheduleQuery['token'], minute: ModScheduleQuery['minute']) =>
-		postJson<ModScheduleResponse>(fetcher, makeUrl(baseUrl, '/delay', { token, minute }), undefined),
+		getJson<ModScheduleResponse>(fetcher, makeUrl(baseUrl, '/delay', { token, minute }), {
+			method: 'POST',
+			headers: { Accept: 'application/json' }
+		}),
 
 	addAlloc: (token: AddAllocQuery['token'], tasks: TaskList) =>
 		postJson<AddAllocResponse>(fetcher, makeUrl(baseUrl, '/alloc', { token }), tasks),
@@ -99,6 +102,8 @@ export const createApi = ({ baseUrl = API_BASE_URL, fetch: fetcher = globalThis.
 			headers: { Accept: 'text/calendar' }
 		})).blob()
 });
+
+export type Api = ReturnType<typeof createApi>;
 
 export const api = createApi();
 export const { getToken, addEvent, modSchedule, addAlloc, getExport } = api;
