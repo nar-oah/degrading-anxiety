@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createApi, type Fetch, type Task } from './api/index.js';
+	import { createApi, type Fetch, type REvent, type Task } from './api/index.js';
 	import CredentialRow from './components/CredentialRow.svelte';
+	import RoutineEventForm from './components/RoutineEventForm.svelte';
+	import RoutineEventItem from './components/RoutineEventItem.svelte';
 	import TaskForm from './components/TaskForm.svelte';
 	import TaskItem from './components/TaskItem.svelte';
 	import { createAppStore } from './store/app.svelte.js';
@@ -14,6 +16,8 @@
 
 	let dateLabel = $state('今天');
 	let arranging = $state(false);
+	let delaying = $state(false);
+	let delayMinutes = $state<number | undefined>(15);
 	let exporting = $state(false);
 	let notice = $state<Notice>();
 	let draggedTask = $state<Task>();
@@ -49,6 +53,9 @@
 	const addTask = (task: Task) => appStore.addTask(task);
 	const updateTask = (index: number, task: Task) => appStore.updateTask(index, task);
 	const removeTask = (index: number) => appStore.removeTask(index);
+	const addEvent = (event: REvent) => appStore.addEvent(event);
+	const updateEvent = (index: number, event: REvent) => appStore.updateEvent(index, event);
+	const removeEvent = (index: number) => appStore.removeEvent(index);
 	const moveTask = async (fromIndex: number, toIndex: number) => {
 		if (fromIndex === toIndex || toIndex < 0 || toIndex >= appStore.tasks.length) return;
 		try {
@@ -89,19 +96,38 @@
 	}
 
 	async function arrangeToday() {
-		if (!appStore.token || appStore.tasks.length === 0) return;
+		if (!appStore.token || (appStore.tasks.length === 0 && appStore.events.length === 0)) return;
 		arranging = true;
 		notice = undefined;
 		try {
 			await appStore.arrangeToday();
 			notice = {
 				tone: 'success',
-				text: '今日任务的安排请求已提交，可稍后在 CalDAV 日历中查看。'
+				text: '日常任务和今日任务的安排请求已提交，可稍后在 CalDAV 日历中查看。'
 			};
 		} catch (value) {
 			notice = { tone: 'error', text: getMessage(value, '安排请求提交失败，请稍后重试') };
 		} finally {
 			arranging = false;
+		}
+	}
+
+	async function delaySchedule() {
+		if (!appStore.token) return;
+		const minutes = Number(delayMinutes);
+		if (!Number.isInteger(minutes) || minutes < 1) {
+			notice = { tone: 'error', text: '推迟时间需要是大于 0 的整数' };
+			return;
+		}
+		delaying = true;
+		notice = undefined;
+		try {
+			await appStore.delaySchedule(minutes);
+			notice = { tone: 'success', text: `今日日程已请求推迟 ${minutes} 分钟。` };
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '推迟请求提交失败，请稍后重试') };
+		} finally {
+			delaying = false;
 		}
 	}
 
@@ -170,7 +196,7 @@
 							写下任务和所需时间，系统会结合日历空档帮你安排今天。
 						</p>
 					</div>
-					<div class="flex shrink-0 gap-2">
+					<div class="flex shrink-0 flex-wrap gap-2">
 						<div class="min-w-24 rounded-2xl bg-white/8 px-4 py-3 backdrop-blur-sm">
 							<p class="m-0 text-2xl font-800">{appStore.tasks.length}</p>
 							<p class="m-0 mt-0.5 text-xs text-stone-400">项任务</p>
@@ -178,6 +204,10 @@
 						<div class="min-w-24 rounded-2xl bg-white/8 px-4 py-3 backdrop-blur-sm">
 							<p class="m-0 text-2xl font-800">{totalMinutes}</p>
 							<p class="m-0 mt-0.5 text-xs text-stone-400">分钟</p>
+						</div>
+						<div class="min-w-24 rounded-2xl bg-white/8 px-4 py-3 backdrop-blur-sm">
+							<p class="m-0 text-2xl font-800">{appStore.events.length}</p>
+							<p class="m-0 mt-0.5 text-xs text-stone-400">项固定日程</p>
 						</div>
 					</div>
 				</div>
@@ -225,7 +255,8 @@
 			{/if}
 
 			<div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(18rem,1fr)]">
-				<section class="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6" aria-labelledby="tasks-title">
+				<div class="grid gap-5">
+					<section class="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6" aria-labelledby="tasks-title">
 					<div class="mb-5 flex items-end justify-between gap-4">
 						<div>
 							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-emerald-700">Task list</p>
@@ -261,7 +292,34 @@
 							{/each}
 						</ul>
 					{/if}
-				</section>
+					</section>
+
+					<section class="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6" aria-labelledby="routines-title">
+						<div class="mb-5 flex items-end justify-between gap-4">
+							<div>
+								<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-sky-700">Daily events</p>
+								<h2 id="routines-title" class="m-0 text-xl font-800 tracking-tight text-stone-900">日常任务</h2>
+							</div>
+							<p class="m-0 text-right text-xs text-stone-500">{appStore.events.length} 项固定日程</p>
+						</div>
+
+						<RoutineEventForm onadd={addEvent} disabled={appStore.loading} />
+
+						{#if appStore.events.length === 0}
+							<div class="mt-5 rounded-2xl border border-dashed border-stone-300 px-5 py-10 text-center">
+								<div class="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-sky-50 text-xl text-sky-500">◷</div>
+								<p class="m-0 text-sm font-700 text-stone-700">还没有固定日程</p>
+								<p class="m-0 mt-1.5 text-xs text-stone-500">添加用餐、通勤等固定时间，自动安排时会预留空档。</p>
+							</div>
+						{:else}
+							<ul class="m-0 mt-5 grid list-none gap-3 p-0">
+								{#each appStore.events as routine, index (routine)}
+									<RoutineEventItem {routine} {index} onupdate={updateEvent} onremove={removeEvent} />
+								{/each}
+							</ul>
+						{/if}
+					</section>
+				</div>
 
 				<aside class="grid gap-5 lg:sticky lg:top-5">
 					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="caldav-title">
@@ -281,6 +339,24 @@
 						</p>
 					</section>
 
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="delay-title">
+						<div>
+							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-amber-700">Delay</p>
+							<h2 id="delay-title" class="m-0 text-lg font-800 text-stone-900">推迟今日日程</h2>
+						</div>
+						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">设置需要整体向后推迟的分钟数。</p>
+
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void delaySchedule(); }}>
+							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="delay-minutes">
+								推迟时间（分钟）
+								<input id="delay-minutes" bind:value={delayMinutes} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-amber-500 focus:ring-3 focus:ring-amber-100" type="number" min="1" step="1" inputmode="numeric" disabled={!appStore.token || delaying} />
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || delaying}>
+								{delaying ? '正在推迟…' : '推迟日程'}
+							</button>
+						</form>
+					</section>
+
 					<section class="rounded-3xl bg-emerald-700 p-5 text-white shadow-lg shadow-emerald-900/10" aria-labelledby="actions-title">
 						<h2 id="actions-title" class="m-0 text-lg font-800">准备好了？</h2>
 						<p class="m-0 mt-1.5 text-xs leading-5 text-emerald-100">提交后，任务会被安排到今天的日历空档中。</p>
@@ -288,7 +364,7 @@
 						<button
 							type="button"
 							class="mt-4 h-12 w-full rounded-xl bg-white px-4 text-sm font-800 text-emerald-800 shadow-sm transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/35 disabled:text-white/70"
-							disabled={!appStore.token || appStore.tasks.length === 0 || arranging}
+							disabled={!appStore.token || (appStore.tasks.length === 0 && appStore.events.length === 0) || arranging}
 							onclick={arrangeToday}
 						>{arranging ? '正在提交…' : '安排今日任务'}</button
 						>
@@ -303,8 +379,8 @@
 
 						{#if !appStore.token}
 							<p class="m-0 mt-3 text-center text-xs text-emerald-100">获取 Token 后即可操作</p>
-						{:else if appStore.tasks.length === 0}
-							<p class="m-0 mt-3 text-center text-xs text-emerald-100">至少添加一项任务后即可安排</p>
+						{:else if appStore.tasks.length === 0 && appStore.events.length === 0}
+							<p class="m-0 mt-3 text-center text-xs text-emerald-100">至少添加一项今日任务或日常任务后即可安排</p>
 						{/if}
 					</section>
 				</aside>
