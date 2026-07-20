@@ -59,8 +59,8 @@
 		<span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400"></span>
 	</div>
 
-	<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_8rem_9rem_auto] lg:items-end">
-		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700">
+	<div class="grid gap-3 sm:grid-cols-2">
+		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700 sm:col-span-2">
 			<span>任务内容</span>
 			<input
 				bind:this={descriptionInput}
@@ -101,7 +101,7 @@
 
 		<button
 			type="submit"
-			class="h-11 rounded-xl bg-stone-900 px-5 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+			class="h-11 w-full rounded-xl bg-stone-900 px-5 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300 sm:col-span-2"
 			disabled={disabled || saving}
 		>
 			{saving ? '保存中…' : '添加任务'}
