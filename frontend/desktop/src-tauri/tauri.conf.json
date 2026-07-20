@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "top.naroah.degrading-anxiety",
   "build": {
-    "frontendDist": "..",
+    "frontendDist": "../build",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm run dev",
     "beforeBuildCommand": "pnpm run build"
