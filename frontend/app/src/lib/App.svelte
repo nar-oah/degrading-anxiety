@@ -5,8 +5,7 @@
 	import type { Store } from './store/storage.js';
 
 	let { fetch, store }: { fetch: Fetch; store: Store } = $props();
-	const api = $derived(createApi(fetch));
-	const appStore = createAppStore(store, api);
+	const appStore = $derived(createAppStore(store, createApi(fetch)));
 
 	onMount(() => {
 		void appStore.init();
