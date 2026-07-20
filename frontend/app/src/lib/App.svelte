@@ -13,26 +13,18 @@
 	type Notice = { tone: 'success' | 'error'; text: string };
 
 	let dateLabel = $state('今天');
-	let tokenDraft = $state('');
-	let tokenVisible = $state(false);
-	let tokenSaving = $state(false);
-	let tokenError = $state('');
 	let arranging = $state(false);
 	let exporting = $state(false);
 	let notice = $state<Notice>();
+	let draggedTask = $state<Task>();
+	let dragTarget = $state<Task>();
 
 	const totalMinutes = $derived(appStore.tasks.reduce((total, task) => total + task.duration, 0));
-	const tokenChanged = $derived(tokenDraft.trim() !== (appStore.token ?? ''));
-	const tokenValid = $derived(/^[A-Za-z0-9_-]{43}$/.test(tokenDraft.trim()));
 	const caldavUrl = $derived(
 		appStore.token
-			? `https://aws.naroah.top/degrading-anxiety/radicale/${encodeURIComponent(appStore.token)}`
+			? `aws.naroah.top/degrading-anxiety/radicale/${encodeURIComponent(appStore.token)}`
 			: undefined
 	);
-
-	$effect(() => {
-		if (appStore.token) tokenDraft = appStore.token;
-	});
 
 	const getMessage = (value: unknown, fallback: string) => {
 		const message = value instanceof Error ? value.message : '';
@@ -54,31 +46,47 @@
 		void appStore.init();
 	});
 
-	async function saveToken() {
-		if (!tokenDraft.trim()) {
-			tokenError = 'Token 不能为空';
-			return;
-		}
-		if (!tokenValid) {
-			tokenError = 'Token 应为 43 位字母、数字、下划线或连字符';
-			return;
-		}
-
-		tokenSaving = true;
-		tokenError = '';
-		try {
-			await appStore.setToken(tokenDraft);
-			notice = { tone: 'success', text: 'Token 已保存，CalDAV 账户信息已同步更新。' };
-		} catch (value) {
-			tokenError = getMessage(value, 'Token 保存失败，请重试');
-		} finally {
-			tokenSaving = false;
-		}
-	}
-
 	const addTask = (task: Task) => appStore.addTask(task);
 	const updateTask = (index: number, task: Task) => appStore.updateTask(index, task);
 	const removeTask = (index: number) => appStore.removeTask(index);
+	const moveTask = async (fromIndex: number, toIndex: number) => {
+		if (fromIndex === toIndex || toIndex < 0 || toIndex >= appStore.tasks.length) return;
+		try {
+			await appStore.moveTask(fromIndex, toIndex);
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '任务顺序保存失败，请重试') };
+		}
+	};
+
+	function startTaskDrag(index: number, event: DragEvent) {
+		const task = appStore.tasks[index];
+		if (!task) return;
+		draggedTask = task;
+		dragTarget = task;
+		if (!event.dataTransfer) return;
+		event.dataTransfer.effectAllowed = 'move';
+		event.dataTransfer.setData('text/plain', String(index));
+	}
+
+	function overTaskDrag(index: number, event: DragEvent) {
+		if (!draggedTask) return;
+		event.preventDefault();
+		dragTarget = appStore.tasks[index];
+		if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+	}
+
+	function dropTask(index: number, event: DragEvent) {
+		event.preventDefault();
+		const fromIndex = draggedTask ? appStore.tasks.indexOf(draggedTask) : -1;
+		draggedTask = undefined;
+		dragTarget = undefined;
+		if (fromIndex >= 0) void moveTask(fromIndex, index);
+	}
+
+	function endTaskDrag() {
+		draggedTask = undefined;
+		dragTarget = undefined;
+	}
 
 	async function arrangeToday() {
 		if (!appStore.token || appStore.tasks.length === 0) return;
@@ -237,59 +245,25 @@
 					{:else}
 						<ul class="m-0 mt-5 grid list-none gap-3 p-0">
 							{#each appStore.tasks as task, index (task)}
-								<TaskItem {task} {index} onupdate={updateTask} onremove={removeTask} />
+								<TaskItem
+									{task}
+									{index}
+									onupdate={updateTask}
+									onremove={removeTask}
+									onmove={moveTask}
+									ondragstart={startTaskDrag}
+									ondragover={overTaskDrag}
+									ondrop={dropTask}
+									ondragend={endTaskDrag}
+									dragging={draggedTask === task}
+									dropTarget={dragTarget === task && draggedTask !== task}
+								/>
 							{/each}
 						</ul>
 					{/if}
 				</section>
 
 				<aside class="grid gap-5 lg:sticky lg:top-5">
-					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="token-title">
-						<div class="mb-4">
-							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-emerald-700">Account</p>
-							<h2 id="token-title" class="m-0 text-lg font-800 text-stone-900">账户 Token</h2>
-						</div>
-
-						<div class="grid gap-1.5 text-sm font-600 text-stone-700">
-							<label for="token-input">Token</label>
-							<div class="flex gap-2">
-								<input
-									id="token-input"
-									bind:value={tokenDraft}
-									class="h-11 min-w-0 flex-1 rounded-xl border border-stone-200 px-3.5 font-mono text-xs text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
-									type={tokenVisible ? 'text' : 'password'}
-									placeholder="正在获取…"
-									maxlength="43"
-									autocomplete="off"
-									spellcheck="false"
-									disabled={appStore.loading || tokenSaving}
-									aria-describedby="token-help"
-									aria-invalid={Boolean(tokenError)}
-									oninput={() => (tokenError = '')}
-									onkeydown={(event) => {
-										if (event.key === 'Enter') void saveToken();
-									}}
-								/>
-								<button
-									type="button"
-									class="h-11 shrink-0 rounded-xl border border-stone-200 px-3 text-xs font-700 text-stone-600 transition hover:bg-stone-50"
-									onclick={() => (tokenVisible = !tokenVisible)}
-								>{tokenVisible ? '隐藏' : '显示'}</button
-								>
-							</div>
-						</div>
-						<p id="token-help" class={`m-0 mt-2 text-xs ${tokenError ? 'text-red-600' : 'text-stone-400'}`}>
-							{tokenError || 'Token 是你的日历身份凭证，请妥善保存。'}
-						</p>
-						<button
-							type="button"
-							class="mt-4 h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
-							disabled={!tokenChanged || !tokenValid || tokenSaving || appStore.loading}
-							onclick={saveToken}
-						>{tokenSaving ? '保存中…' : '保存 Token'}</button
-						>
-					</section>
-
 					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="caldav-title">
 						<div class="mb-4 flex items-start justify-between gap-3">
 							<div>
@@ -300,8 +274,7 @@
 						</div>
 
 						<CredentialRow label="服务器地址" value={caldavUrl} />
-						<CredentialRow label="用户名" value={appStore.token} />
-						<CredentialRow label="密码" value={appStore.token} secret />
+						<CredentialRow label="用户名&密码" value={appStore.token} />
 
 						<p class="m-0 mt-4 rounded-xl bg-stone-50 px-3 py-2.5 text-xs leading-5 text-stone-500">
 							首次提交安排后会自动创建日历，此后即可在系统日历中添加该账户。
@@ -329,7 +302,7 @@
 						>
 
 						{#if !appStore.token}
-							<p class="m-0 mt-3 text-center text-xs text-emerald-100">获取或填写 Token 后即可操作</p>
+							<p class="m-0 mt-3 text-center text-xs text-emerald-100">获取 Token 后即可操作</p>
 						{:else if appStore.tasks.length === 0}
 							<p class="m-0 mt-3 text-center text-xs text-emerald-100">至少添加一项任务后即可安排</p>
 						{/if}
@@ -338,6 +311,6 @@
 			</div>
 		</main>
 
-		<footer class="py-7 text-center text-xs text-stone-400">任务草稿保存在当前设备，Token 用于连接个人日历。</footer>
+		<footer class="py-7 text-center text-xs text-stone-400">任务草稿保存在当前设备，账户凭据由系统自动生成。</footer>
 	</div>
 </div>

@@ -59,13 +59,13 @@
 		<span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400"></span>
 	</div>
 
-	<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_8rem_9rem_auto] lg:items-end">
-		<label class="grid gap-1.5 text-sm font-600 text-stone-700">
+	<div class="grid gap-3 sm:grid-cols-2">
+		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700 sm:col-span-2">
 			<span>任务内容</span>
 			<input
 				bind:this={descriptionInput}
 				bind:value={description}
-				class="h-11 min-w-0 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
+				class="box-border h-11 w-full min-w-0 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
 				placeholder="例如：完成项目周报"
 				maxlength="120"
 				disabled={disabled || saving}
@@ -73,11 +73,11 @@
 			/>
 		</label>
 
-		<label class="grid gap-1.5 text-sm font-600 text-stone-700">
+		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700">
 			<span>时长（分钟）</span>
 			<input
 				bind:value={duration}
-				class="h-11 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
+				class="box-border h-11 w-full min-w-0 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
 				type="number"
 				min="1"
 				step="1"
@@ -86,11 +86,11 @@
 			/>
 		</label>
 
-		<label class="grid gap-1.5 text-sm font-600 text-stone-700">
+		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700">
 			<span>安排偏好</span>
 			<select
 				bind:value={arrange}
-				class="h-11 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
+				class="box-border h-11 w-full min-w-0 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
 				disabled={disabled || saving}
 			>
 				<option value="normal">灵活安排</option>
@@ -101,7 +101,7 @@
 
 		<button
 			type="submit"
-			class="h-11 rounded-xl bg-stone-900 px-5 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+			class="box-border h-11 w-full rounded-xl bg-stone-900 px-5 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300 sm:col-span-2"
 			disabled={disabled || saving}
 		>
 			{saving ? '保存中…' : '添加任务'}
