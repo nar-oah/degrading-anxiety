@@ -1,18 +1,21 @@
-import type { Api, Task, TaskList } from '../api/index.js';
+import type { Api, REvent, Task, TaskList } from '../api/index.js';
 import type { Store } from './storage.js';
 
 const TOKEN = 'token';
 const TASKS = 'tasks';
+const EVENTS = 'events';
 
 export class AppStore {
 	token = $state<string>();
 	tasks = $state<TaskList>([]);
+	events = $state<REvent[]>([]);
 	loading = $state(false);
 	initialized = $state(false);
 	error = $state<unknown>();
 
 	#initializing?: Promise<void>;
 	#taskWriting = Promise.resolve();
+	#eventWriting = Promise.resolve();
 
 	constructor(
 		private readonly store: Store,
@@ -77,10 +80,45 @@ export class AppStore {
 		});
 	}
 
+	async addEvent(event: REvent): Promise<void> {
+		await this.#writeEvents((events) => [...events, event]);
+	}
+
+	async updateEvent(index: number, event: REvent): Promise<void> {
+		const target = this.events[index];
+		if (!target) throw new Error('未找到要修改的日常任务');
+		await this.#writeEvents((events) => {
+			const position = events.indexOf(target);
+			if (position < 0) throw new Error('未找到要修改的日常任务');
+			return events.map((current, index) => (index === position ? event : current));
+		});
+	}
+
+	async removeEvent(index: number): Promise<void> {
+		const target = this.events[index];
+		if (!target) throw new Error('未找到要删除的日常任务');
+		await this.#writeEvents((events) => {
+			const position = events.indexOf(target);
+			if (position < 0) throw new Error('未找到要删除的日常任务');
+			return events.filter((_, index) => index !== position);
+		});
+	}
+
 	async arrangeToday(): Promise<string> {
 		const token = this.#getToken();
+		for (const event of this.events) {
+			const requestId = await this.api.addEvent(token, event);
+			if (!requestId) throw new Error(`日常任务“${event.summary}”添加失败，已停止安排`);
+		}
 		const requestId = await this.api.addAlloc(token, this.tasks);
 		if (!requestId) throw new Error('安排请求提交失败，请稍后重试');
+		return requestId;
+	}
+
+	async delaySchedule(minute: number): Promise<string> {
+		if (!Number.isInteger(minute) || minute < 1) throw new Error('推迟时间需要是大于 0 的整数');
+		const requestId = await this.api.modSchedule(this.#getToken(), minute);
+		if (!requestId) throw new Error('推迟请求提交失败，请稍后重试');
 		return requestId;
 	}
 
@@ -96,13 +134,17 @@ export class AppStore {
 		this.error = undefined;
 
 		try {
-			const [savedToken, savedTasks] = await Promise.all([
+			const [savedToken, savedTasks, savedEvents] = await Promise.all([
 				this.store.get<string>(TOKEN),
-				this.store.get<TaskList>(TASKS)
+				this.store.get<TaskList>(TASKS),
+				this.store.get<REvent[]>(EVENTS)
 			]);
 			const tasks = savedTasks ?? [];
+			const events = savedEvents ?? [];
 			this.tasks = tasks;
+			this.events = events;
 			if (savedTasks === undefined) await this.store.set(TASKS, tasks);
+			if (savedEvents === undefined) await this.store.set(EVENTS, events);
 
 			const storedToken = savedToken?.trim();
 			const token = (storedToken || (await this.api.getToken()))?.trim();
@@ -133,6 +175,16 @@ export class AppStore {
 			this.tasks = tasks;
 		});
 		this.#taskWriting = writing.catch(() => undefined);
+		return writing;
+	}
+
+	#writeEvents(update: (events: REvent[]) => REvent[]): Promise<void> {
+		const writing = this.#eventWriting.then(async () => {
+			const events = update(this.events);
+			await this.store.set(EVENTS, events);
+			this.events = events;
+		});
+		this.#eventWriting = writing.catch(() => undefined);
 		return writing;
 	}
 }
