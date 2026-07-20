@@ -5,12 +5,20 @@ from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from degrading_anxiety_contracts.schedule import REvent, TaskList
 from secrets import token_urlsafe
 
 app = FastAPI(title="Degrading Anxiety API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
 celery_app = Celery(
     "api",
     broker="redis://redis:6379/0",

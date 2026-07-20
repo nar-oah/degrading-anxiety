@@ -7,16 +7,8 @@
 	import { createAppStore } from './store/app.svelte.js';
 	import type { Store } from './store/storage.js';
 
-	let {
-		fetch,
-		store,
-		apiBaseUrl
-	}: {
-		fetch: Fetch;
-		store: Store;
-		apiBaseUrl?: string;
-	} = $props();
-	const appStore = $derived(createAppStore(store, createApi(fetch, apiBaseUrl)));
+	let { fetch, store }: { fetch: Fetch; store: Store } = $props();
+	const appStore = $derived(createAppStore(store, createApi(fetch)));
 
 	type Notice = { tone: 'success' | 'error'; text: string };
 
