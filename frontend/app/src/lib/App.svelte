@@ -274,7 +274,7 @@
 						</div>
 
 						<CredentialRow label="服务器地址" value={caldavUrl} />
-						<CredentialRow label="用户名 & 密码" value={appStore.token} />
+						<CredentialRow label="用户名&密码" value={appStore.token} />
 
 						<p class="m-0 mt-4 rounded-xl bg-stone-50 px-3 py-2.5 text-xs leading-5 text-stone-500">
 							首次提交安排后会自动创建日历，此后即可在系统日历中添加该账户。
@@ -302,7 +302,7 @@
 						>
 
 						{#if !appStore.token}
-							<p class="m-0 mt-3 text-center text-xs text-emerald-100">获取或填写 Token 后即可操作</p>
+							<p class="m-0 mt-3 text-center text-xs text-emerald-100">获取 Token 后即可操作</p>
 						{:else if appStore.tasks.length === 0}
 							<p class="m-0 mt-3 text-center text-xs text-emerald-100">至少添加一项任务后即可安排</p>
 						{/if}
