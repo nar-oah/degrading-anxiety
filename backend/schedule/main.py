@@ -16,8 +16,7 @@ celery_app = Celery(
 
 def get_radicale(token: str) -> Radicale:
     if isinstance(token, str) and bool(TOKEN_RE.fullmatch(token)):
-        add_user(token)
-        return Radicale(token)
+        return add_user(token)
     raise
 
 

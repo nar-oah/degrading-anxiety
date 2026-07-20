@@ -28,7 +28,7 @@ def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
     list(map(lambda task: add_event(get_event(task, alloc)), tasks))
 
 
-def add_user(token: str) -> None:
+def add_user(token: str) -> Radicale:
     def has_user(file) -> bool:
         file.seek(0)
         get_login: Callable[[str], str] = lambda line: line.split(":", 1)[0]
@@ -45,10 +45,10 @@ def add_user(token: str) -> None:
 
     with USERS_FILE.open("a+", encoding="utf-8") as file:
         fcntl.flock(file, fcntl.LOCK_EX)
-        if not has_user(file):
-            write_user(file)
-            Radicale(token).add_calendar()
+        write_user(file) if not has_user(file) else False
+        radicale = Radicale(token)
         fcntl.flock(file, fcntl.LOCK_UN)
+        return radicale
 
 
 if __name__ == "__main__":
