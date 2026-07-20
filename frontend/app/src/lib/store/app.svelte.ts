@@ -74,19 +74,18 @@ export class AppStore {
 				this.store.get<string>(TOKEN),
 				this.store.get<TaskList>(TASKS)
 			]);
-			const storedToken = savedToken?.trim();
-			const token = storedToken || (await this.api.getToken());
-
-			if (token === undefined) throw new Error('Failed to get token');
-
 			const tasks = savedTasks ?? [];
-			await Promise.all([
-				storedToken !== token ? this.store.set(TOKEN, token) : Promise.resolve(),
-				savedTasks === undefined ? this.store.set(TASKS, tasks) : Promise.resolve()
-			]);
+			this.tasks = tasks;
+			if (savedTasks === undefined) await this.store.set(TASKS, tasks);
+
+			const storedToken = savedToken?.trim();
+			const token = (storedToken || (await this.api.getToken()))?.trim();
+
+			if (!token) throw new Error('Failed to get token');
+
+			if (storedToken !== token) await this.store.set(TOKEN, token);
 
 			this.token = token;
-			this.tasks = tasks;
 			this.initialized = true;
 		} catch (error) {
 			this.error = error;
