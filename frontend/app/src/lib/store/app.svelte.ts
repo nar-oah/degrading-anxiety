@@ -12,6 +12,7 @@ export class AppStore {
 	error = $state<unknown>();
 
 	#initializing?: Promise<void>;
+	#taskWriting = Promise.resolve();
 
 	constructor(
 		private readonly store: Store,
@@ -33,22 +34,31 @@ export class AppStore {
 	}
 
 	async setTasks(tasks: TaskList): Promise<void> {
-		await this.store.set(TASKS, tasks);
-		this.tasks = tasks;
+		await this.#writeTasks(() => tasks);
 	}
 
 	async addTask(task: Task): Promise<void> {
-		await this.setTasks([...this.tasks, task]);
+		await this.#writeTasks((tasks) => [...tasks, task]);
 	}
 
 	async updateTask(index: number, task: Task): Promise<void> {
-		if (index < 0 || index >= this.tasks.length) throw new Error('未找到要修改的任务');
-		await this.setTasks(this.tasks.map((current, position) => (position === index ? task : current)));
+		const target = this.tasks[index];
+		if (!target) throw new Error('未找到要修改的任务');
+		await this.#writeTasks((tasks) => {
+			const position = tasks.indexOf(target);
+			if (position < 0) throw new Error('未找到要修改的任务');
+			return tasks.map((current, index) => (index === position ? task : current));
+		});
 	}
 
 	async removeTask(index: number): Promise<void> {
-		if (index < 0 || index >= this.tasks.length) throw new Error('未找到要删除的任务');
-		await this.setTasks(this.tasks.filter((_, position) => position !== index));
+		const target = this.tasks[index];
+		if (!target) throw new Error('未找到要删除的任务');
+		await this.#writeTasks((tasks) => {
+			const position = tasks.indexOf(target);
+			if (position < 0) throw new Error('未找到要删除的任务');
+			return tasks.filter((_, index) => index !== position);
+		});
 	}
 
 	async arrangeToday(): Promise<string> {
@@ -98,6 +108,16 @@ export class AppStore {
 		const token = this.token?.trim();
 		if (!token) throw new Error('Token 尚未就绪');
 		return token;
+	}
+
+	#writeTasks(update: (tasks: TaskList) => TaskList): Promise<void> {
+		const writing = this.#taskWriting.then(async () => {
+			const tasks = update(this.tasks);
+			await this.store.set(TASKS, tasks);
+			this.tasks = tasks;
+		});
+		this.#taskWriting = writing.catch(() => undefined);
+		return writing;
 	}
 }
 

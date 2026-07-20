@@ -226,7 +226,7 @@
 						<p class="m-0 text-right text-xs text-stone-500">{appStore.tasks.length} 项 · {totalMinutes} 分钟</p>
 					</div>
 
-					<TaskForm onadd={addTask} />
+					<TaskForm onadd={addTask} disabled={appStore.loading} />
 
 					{#if appStore.tasks.length === 0}
 						<div class="mt-5 rounded-2xl border border-dashed border-stone-300 px-5 py-12 text-center">
@@ -250,10 +250,11 @@
 							<h2 id="token-title" class="m-0 text-lg font-800 text-stone-900">账户 Token</h2>
 						</div>
 
-						<label class="grid gap-1.5 text-sm font-600 text-stone-700">
-							<span>Token</span>
+						<div class="grid gap-1.5 text-sm font-600 text-stone-700">
+							<label for="token-input">Token</label>
 							<div class="flex gap-2">
 								<input
+									id="token-input"
 									bind:value={tokenDraft}
 									class="h-11 min-w-0 flex-1 rounded-xl border border-stone-200 px-3.5 font-mono text-xs text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
 									type={tokenVisible ? 'text' : 'password'}
@@ -262,6 +263,8 @@
 									autocomplete="off"
 									spellcheck="false"
 									disabled={appStore.loading || tokenSaving}
+									aria-describedby="token-help"
+									aria-invalid={Boolean(tokenError)}
 									oninput={() => (tokenError = '')}
 									onkeydown={(event) => {
 										if (event.key === 'Enter') void saveToken();
@@ -274,8 +277,8 @@
 								>{tokenVisible ? '隐藏' : '显示'}</button
 								>
 							</div>
-						</label>
-						<p class={`m-0 mt-2 text-xs ${tokenError ? 'text-red-600' : 'text-stone-400'}`}>
+						</div>
+						<p id="token-help" class={`m-0 mt-2 text-xs ${tokenError ? 'text-red-600' : 'text-stone-400'}`}>
 							{tokenError || 'Token 是你的日历身份凭证，请妥善保存。'}
 						</p>
 						<button
