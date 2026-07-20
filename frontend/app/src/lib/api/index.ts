@@ -7,9 +7,12 @@ export type REvent = components['schemas']['REvent'];
 export type Task = components['schemas']['Task'];
 export type TaskList = components['schemas']['TaskList'];
 
-export function createApi(fetch: Fetch) {
+export function createApi(
+	fetch: Fetch,
+	baseUrl = 'https://aws.naroah.top/degrading-anxiety/'
+) {
 	const api = createClient<paths>({
-		baseUrl: 'https://aws.naroah.top/degrading-anxiety/',
+		baseUrl,
 		fetch
 	});
 

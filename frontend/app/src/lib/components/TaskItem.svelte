@@ -103,7 +103,7 @@
 						class="h-11 rounded-xl border border-stone-200 px-3.5 text-sm text-stone-900 outline-none focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
 						type="number"
 						min="1"
-						step="5"
+						step="1"
 						disabled={busy}
 					/>
 				</label>

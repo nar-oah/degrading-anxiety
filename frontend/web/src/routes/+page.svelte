@@ -3,4 +3,4 @@
 	import { store } from '$lib/store.js';
 </script>
 
-<App fetch={globalThis.fetch} {store} />
+<App fetch={globalThis.fetch} {store} apiBaseUrl="/api/" />
