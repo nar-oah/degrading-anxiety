@@ -34,8 +34,10 @@
 		if (appStore.token) tokenDraft = appStore.token;
 	});
 
-	const getMessage = (value: unknown, fallback: string) =>
-		value instanceof Error && value.message ? value.message : fallback;
+	const getMessage = (value: unknown, fallback: string) => {
+		const message = value instanceof Error ? value.message : '';
+		return /[\u3400-\u9fff]/.test(message) ? message : fallback;
+	};
 
 	const pad = (value: number) => String(value).padStart(2, '0');
 	const getLocalDate = () => {
@@ -109,7 +111,7 @@
 			document.body.append(anchor);
 			anchor.click();
 			anchor.remove();
-			URL.revokeObjectURL(url);
+			setTimeout(() => URL.revokeObjectURL(url), 0);
 			notice = { tone: 'success', text: '今天的 ICS 日历文件已开始下载。' };
 		} catch (value) {
 			notice = {
@@ -333,6 +335,6 @@
 			</div>
 		</main>
 
-		<footer class="py-7 text-center text-xs text-stone-400">你的任务仅保存在当前设备，Token 用于连接个人日历。</footer>
+		<footer class="py-7 text-center text-xs text-stone-400">任务草稿保存在当前设备，Token 用于连接个人日历。</footer>
 	</div>
 </div>

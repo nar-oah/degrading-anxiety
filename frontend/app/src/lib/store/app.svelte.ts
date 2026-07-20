@@ -27,7 +27,7 @@ export class AppStore {
 
 	async setToken(token: string): Promise<void> {
 		const value = token.trim();
-		if (!value) throw new Error('Token cannot be empty');
+		if (!value) throw new Error('Token 不能为空');
 		await this.store.set(TOKEN, value);
 		this.token = value;
 	}
@@ -42,26 +42,26 @@ export class AppStore {
 	}
 
 	async updateTask(index: number, task: Task): Promise<void> {
-		if (index < 0 || index >= this.tasks.length) throw new Error('Task not found');
+		if (index < 0 || index >= this.tasks.length) throw new Error('未找到要修改的任务');
 		await this.setTasks(this.tasks.map((current, position) => (position === index ? task : current)));
 	}
 
 	async removeTask(index: number): Promise<void> {
-		if (index < 0 || index >= this.tasks.length) throw new Error('Task not found');
+		if (index < 0 || index >= this.tasks.length) throw new Error('未找到要删除的任务');
 		await this.setTasks(this.tasks.filter((_, position) => position !== index));
 	}
 
 	async arrangeToday(): Promise<string> {
 		const token = this.#getToken();
 		const requestId = await this.api.addAlloc(token, this.tasks);
-		if (!requestId) throw new Error('Failed to arrange tasks');
+		if (!requestId) throw new Error('安排请求提交失败，请稍后重试');
 		return requestId;
 	}
 
 	async exportCalendar(date: string): Promise<Blob> {
 		const token = this.#getToken();
 		const calendar = await this.api.getExport(token, date);
-		if (!calendar) throw new Error('Failed to export calendar');
+		if (!calendar) throw new Error('日历导出失败，请稍后重试');
 		return calendar;
 	}
 
@@ -81,7 +81,7 @@ export class AppStore {
 			const storedToken = savedToken?.trim();
 			const token = (storedToken || (await this.api.getToken()))?.trim();
 
-			if (!token) throw new Error('Failed to get token');
+			if (!token) throw new Error('Token 获取失败');
 
 			if (storedToken !== token) await this.store.set(TOKEN, token);
 
@@ -96,7 +96,7 @@ export class AppStore {
 
 	#getToken(): string {
 		const token = this.token?.trim();
-		if (!token) throw new Error('Token is not ready');
+		if (!token) throw new Error('Token 尚未就绪');
 		return token;
 	}
 }
