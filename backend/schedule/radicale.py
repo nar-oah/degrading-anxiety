@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from caldav.davclient import DAVClient
-from caldav import Event
+from caldav import Calendar as CalDAVCalendar, Event
 from datetime import datetime, timedelta, tzinfo
 from icalendar import Alarm, Component, Calendar
 from degrading_anxiety_contracts.schedule import REvent
@@ -16,7 +16,19 @@ class Radicale:
     def __init__(self, token: str) -> None:
         with DAVClient(url=URL, username=token, password=token) as client:
             self.principal = client.principal()
-            self.calendar = self.principal.calendar(CALENDAR)
+            self.calendar = self.add_calendar()
+
+    def add_calendar(self) -> CalDAVCalendar:
+        calendars = self.principal.get_calendars()
+        calendar = next(
+            filter(lambda value: value.get_display_name() == CALENDAR, calendars),
+            None,
+        )
+        return (
+            calendar
+            if isinstance(calendar, CalDAVCalendar)
+            else self.principal.make_calendar(name=CALENDAR)
+        )
 
     def add_event(self, event: REvent, rrule: Rrule | None = None) -> None:
         def get_rrule(c: int, i: int, day: str) -> Rrule:
@@ -63,9 +75,6 @@ class Radicale:
             )
 
         return map(lambda x: get_time(x), self.get_events(day))
-
-    def add_calendar(self) -> None:
-        self.principal.make_calendar(name=CALENDAR)
 
     def get_calendar(self, start: datetime, end: datetime) -> bytes:
         def add_head(calendar: Calendar) -> None:
