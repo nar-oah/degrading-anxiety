@@ -339,6 +339,24 @@
 						</p>
 					</section>
 
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="delay-title">
+						<div>
+							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-amber-700">Delay</p>
+							<h2 id="delay-title" class="m-0 text-lg font-800 text-stone-900">推迟今日日程</h2>
+						</div>
+						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">设置需要整体向后推迟的分钟数。</p>
+
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void delaySchedule(); }}>
+							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="delay-minutes">
+								推迟时间（分钟）
+								<input id="delay-minutes" bind:value={delayMinutes} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-amber-500 focus:ring-3 focus:ring-amber-100" type="number" min="1" step="1" inputmode="numeric" disabled={!appStore.token || delaying} />
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || delaying}>
+								{delaying ? '正在推迟…' : '推迟日程'}
+							</button>
+						</form>
+					</section>
+
 					<section class="rounded-3xl bg-emerald-700 p-5 text-white shadow-lg shadow-emerald-900/10" aria-labelledby="actions-title">
 						<h2 id="actions-title" class="m-0 text-lg font-800">准备好了？</h2>
 						<p class="m-0 mt-1.5 text-xs leading-5 text-emerald-100">提交后，任务会被安排到今天的日历空档中。</p>
@@ -350,16 +368,6 @@
 							onclick={arrangeToday}
 						>{arranging ? '正在提交…' : '安排今日任务'}</button
 						>
-
-						<form class="mt-2.5 rounded-xl bg-emerald-800/55 p-3" onsubmit={(event) => { event.preventDefault(); void delaySchedule(); }}>
-							<label class="mb-2 grid gap-1.5 text-xs font-700 text-emerald-50" for="delay-minutes">
-								推迟今日日程（分钟）
-								<input id="delay-minutes" bind:value={delayMinutes} class="box-border h-10 w-full rounded-lg border border-white/20 bg-white px-3 text-sm text-stone-900 outline-none focus:ring-3 focus:ring-emerald-300/40" type="number" min="1" step="1" inputmode="numeric" disabled={!appStore.token || delaying} />
-							</label>
-							<button type="submit" class="h-10 w-full rounded-lg border border-white/25 bg-transparent px-4 text-sm font-700 text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45" disabled={!appStore.token || delaying}>
-								{delaying ? '正在推迟…' : '推迟日程'}
-							</button>
-						</form>
 
 						<button
 							type="button"
