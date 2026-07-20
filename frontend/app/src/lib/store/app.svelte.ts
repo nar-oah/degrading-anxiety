@@ -61,6 +61,22 @@ export class AppStore {
 		});
 	}
 
+	async moveTask(fromIndex: number, toIndex: number): Promise<void> {
+		const source = this.tasks[fromIndex];
+		const target = this.tasks[toIndex];
+		if (!source || !target) throw new Error('未找到要移动的任务');
+		if (source === target) return;
+		await this.#writeTasks((tasks) => {
+			const from = tasks.indexOf(source);
+			const to = tasks.indexOf(target);
+			if (from < 0 || to < 0) throw new Error('未找到要移动的任务');
+			const reordered = [...tasks];
+			reordered.splice(from, 1);
+			reordered.splice(to, 0, source);
+			return reordered;
+		});
+	}
+
 	async arrangeToday(): Promise<string> {
 		const token = this.#getToken();
 		const requestId = await this.api.addAlloc(token, this.tasks);
