@@ -1,4 +1,4 @@
-name: tauri-desktop-release
+name: tauri-release
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: tauri-desktop-release-${{ github.ref }}
+  group: tauri-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -81,7 +81,93 @@ jobs:
           tauriScript: pnpm exec tauri
           tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          releaseBody: Desktop release for ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}.
+          releaseBody: Release for ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+  android:
+    name: build-android
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      NDK_VERSION: 29.0.13846066
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: frontend/desktop/src-tauri/gen/android/**/*.gradle*
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+
+      - name: Export Android NDK path
+        run: echo "NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Install Rust stable with Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Cache Rust builds
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/desktop/src-tauri -> target
+          shared-key: android
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build shared frontend package
+        run: pnpm app:build
+        working-directory: frontend
+
+      - name: Set up Android signing
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_BASE64"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/degrading-anxiety-upload-keystore.jks"
+          {
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'password=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'storeFile=%s\n' "$RUNNER_TEMP/degrading-anxiety-upload-keystore.jks"
+          } > frontend/desktop/src-tauri/gen/android/keystore.properties
+
+      - name: Build and upload Android APK
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: frontend/desktop
+          tauriScript: pnpm exec tauri
+          mobile: android
+          tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseBody: Release for ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}.
+          releaseDraft: false
+          prerelease: false
+          args: --apk
