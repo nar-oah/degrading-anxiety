@@ -40,3 +40,27 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Android release signing
+
+Release APKs are signed from `src-tauri/gen/android/keystore.properties`. This file and the keystore itself must stay out of version control. For local builds, create the ignored properties file with:
+
+```properties
+keyAlias=<key alias>
+password=<keystore and key password>
+storeFile=<absolute path to the .jks file>
+```
+
+Build the universal APK from this directory with:
+
+```sh
+pnpm tauri android build --apk --ci
+```
+
+The tag release workflow reconstructs the same properties file from these GitHub Actions Secrets:
+
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+- `ANDROID_KEY_BASE64` (the base64-encoded `.jks` file)
+
+Back up the `.jks` file and its password securely. Losing either prevents future APKs from upgrading an installed app signed with that key.
