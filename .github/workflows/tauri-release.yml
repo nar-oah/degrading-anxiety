@@ -3,7 +3,13 @@ name: tauri-desktop-release
 on:
   push:
     tags:
-      - "**"
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (for example, v0.1.0)
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -44,6 +50,7 @@ jobs:
         with:
           node-version: lts/*
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -55,21 +62,26 @@ jobs:
       - name: Cache Rust builds
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: apps/desktop/src-tauri -> target
+          workspaces: frontend/desktop/src-tauri -> target
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build shared frontend package
+        run: pnpm app:build
+        working-directory: frontend
 
       - name: Build and upload desktop bundles
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: apps/desktop
+          projectPath: frontend/desktop
           tauriScript: pnpm exec tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: Desktop release for ${{ github.ref_name }}.
+          tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseBody: Desktop release for ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}.
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
