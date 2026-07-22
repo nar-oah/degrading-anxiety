@@ -63,12 +63,13 @@ class Alloc:
         def get_piece(time: datetime) -> int:
             return (time.hour * 60) + time.minute
 
-        delay_dt = self.day + timedelta(minutes=delay)
+        current = self.day
+        delay_dt = current + timedelta(minutes=delay)
         events = filter(
-            lambda event: get_start(event) >= self.day,
-            self.radicale.get_events(self.day),
+            lambda event: get_start(event) >= current,
+            self.radicale.get_events(current),
         )
-        self.slots.chop(get_piece(self.day), get_piece(delay_dt))
+        self.slots.chop(get_piece(current), get_piece(delay_dt))
         self.day = delay_dt
         for event in events:
             mod_event(event, self.get_schedule(get_dur(event)))

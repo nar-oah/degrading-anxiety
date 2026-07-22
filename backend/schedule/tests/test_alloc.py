@@ -1,7 +1,7 @@
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest import TestCase
-
 from alloc import Alloc
 
 
@@ -26,7 +26,7 @@ class FakeRadicale:
         self.events = events
         self.queries: list[datetime] = []
 
-    def get_times(self, day: datetime):
+    def get_times(self, day: datetime) -> Iterable[tuple[datetime, datetime]]:
         return map(
             lambda event: (
                 event.component["dtstart"].dt,
