@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 from unittest import TestCase
 from unittest.mock import patch
@@ -16,7 +17,7 @@ class FakeRadicale:
 
     def get_times(
         self, name: str, day: datetime
-    ) -> tuple[tuple[datetime, datetime], ...]:
+    ) -> Iterable[tuple[datetime, datetime]]:
         return iter(())
 
 
