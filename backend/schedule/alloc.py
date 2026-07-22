@@ -61,10 +61,8 @@ class Alloc:
 
         current = self.day
         delay_dt = current + timedelta(minutes=delay)
-        events = filter(
-            lambda event: get_start(event) >= current.timestamp(),
-            self.radicale.get_events(current),
-        )
+        events = self.radicale.get_events(current)
+        events = filter(lambda event: get_start(event) >= current.timestamp(), events)
         self.slots.chop(get_piece(current), get_piece(delay_dt))
         self.day = delay_dt
         for event in events:
