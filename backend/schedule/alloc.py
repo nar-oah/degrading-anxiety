@@ -1,24 +1,30 @@
 from collections.abc import Callable, Iterable
 from datetime import date, datetime, time, timedelta
+from itertools import chain
 from caldav import Event
 from intervaltree import Interval, IntervalTree
 from degrading_anxiety_contracts.schedule import Arrange
-from radicale import Radicale
+from radicale import ALLOC_CALENDAR, CALENDARS, Radicale
 
 
 class Alloc:
-    def __init__(self, radicale: Radicale, day: datetime | None = None) -> None:
-        def get_pieces() -> Iterable[tuple[int, int]]:
+    def __init__(
+        self,
+        radicale: Radicale,
+        day: datetime | None = None,
+        calendars: Iterable[str] = CALENDARS,
+    ) -> None:
+        def get_pieces(name: str) -> Iterable[tuple[int, int]]:
             get_piece = lambda x: (x.hour * 60) + x.minute
-            events = radicale.get_times(self.day)
+            events = radicale.get_times(name, self.day)
             return map(lambda x: (get_piece(x[0]) - 15, get_piece(x[1]) + 10), events)
 
         self.day = day if isinstance(day, datetime) else datetime.now()
         start = (self.day.hour * 60) + self.day.minute
         self.slots = IntervalTree([Interval(start, 21 * 60)])
         self.radicale = radicale
-        for start, end in get_pieces():
-            self.slots.chop(start, end)
+        pieces = chain.from_iterable(map(get_pieces, calendars))
+        list(map(lambda piece: self.slots.chop(*piece), pieces))
 
     def get_schedule(self, dur: int, range=Arrange.NORMAL) -> tuple[datetime, datetime]:
         def get_key() -> Callable[[Interval], int]:
@@ -61,7 +67,7 @@ class Alloc:
 
         current = self.day
         delay_dt = current + timedelta(minutes=delay)
-        events = self.radicale.get_events(current)
+        events = self.radicale.get_events(ALLOC_CALENDAR, current)
         events = filter(lambda event: get_start(event) >= current.timestamp(), events)
         self.slots.chop(get_piece(current), get_piece(delay_dt))
         self.day = delay_dt
