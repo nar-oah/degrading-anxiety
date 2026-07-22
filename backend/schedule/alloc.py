@@ -1,5 +1,5 @@
 from collections.abc import Callable, Iterable
-from datetime import date, datetime, time, timedelta, tzinfo
+from datetime import date, datetime, time, timedelta
 from caldav import Event
 from intervaltree import Interval, IntervalTree
 from degrading_anxiety_contracts.schedule import Arrange
@@ -47,13 +47,9 @@ class Alloc:
             delta = event.get_duration()
             return int(delta.total_seconds() // 60)
 
-        def get_start(event: Event) -> datetime:
+        def get_start(event: Event) -> float:
             start: datetime = event.component.get("dtstart").dt
-            return (
-                start.astimezone().replace(tzinfo=None)
-                if isinstance(start.tzinfo, tzinfo)
-                else start
-            )
+            return start.timestamp()
 
         def mod_event(event: Event, schedule: tuple[datetime, datetime]) -> None:
             _, end = schedule
@@ -66,7 +62,7 @@ class Alloc:
         current = self.day
         delay_dt = current + timedelta(minutes=delay)
         events = filter(
-            lambda event: get_start(event) >= current,
+            lambda event: get_start(event) >= current.timestamp(),
             self.radicale.get_events(current),
         )
         self.slots.chop(get_piece(current), get_piece(delay_dt))
