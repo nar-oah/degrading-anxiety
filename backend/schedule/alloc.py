@@ -47,6 +47,10 @@ class Alloc:
             delta = event.get_duration()
             return int(delta.total_seconds() // 60)
 
+        def get_start(event: Event) -> float:
+            start: datetime = event.component.get("dtstart").dt
+            return start.timestamp()
+
         def mod_event(event: Event, schedule: tuple[datetime, datetime]) -> None:
             _, end = schedule
             event.set_end(end, True)
@@ -55,9 +59,11 @@ class Alloc:
         def get_piece(time: datetime) -> int:
             return (time.hour * 60) + time.minute
 
-        delay_dt = self.day + timedelta(minutes=delay)
-        events = self.radicale.get_events(delay_dt)
-        self.slots.chop(get_piece(self.day), get_piece(delay_dt))
+        current = self.day
+        delay_dt = current + timedelta(minutes=delay)
+        events = self.radicale.get_events(current)
+        events = filter(lambda event: get_start(event) >= current.timestamp(), events)
+        self.slots.chop(get_piece(current), get_piece(delay_dt))
         self.day = delay_dt
         for event in events:
             mod_event(event, self.get_schedule(get_dur(event)))
