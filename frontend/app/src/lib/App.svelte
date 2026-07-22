@@ -22,6 +22,7 @@
 	let notice = $state<Notice>();
 	let draggedTask = $state<Task>();
 	let dragTarget = $state<Task>();
+	let pointerDragId: number | undefined;
 
 	const totalMinutes = $derived(appStore.tasks.reduce((total, task) => total + task.duration, 0));
 	const caldavUrl = $derived(
@@ -75,6 +76,44 @@
 		event.dataTransfer.setData('text/plain', String(index));
 	}
 
+	function startTaskPointerDrag(index: number, event: PointerEvent) {
+		if (event.pointerType === 'mouse' || !event.isPrimary || pointerDragId !== undefined) return;
+		const task = appStore.tasks[index];
+		if (!task) return;
+		event.preventDefault();
+		pointerDragId = event.pointerId;
+		draggedTask = task;
+		dragTarget = task;
+		(event.currentTarget as HTMLButtonElement).setPointerCapture(event.pointerId);
+	}
+
+	function overTaskPointerDrag(event: PointerEvent) {
+		if (event.pointerId !== pointerDragId || !draggedTask) return;
+		event.preventDefault();
+		const item = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-task-index]');
+		const index = Number(item?.dataset.taskIndex);
+		if (Number.isInteger(index) && appStore.tasks[index]) dragTarget = appStore.tasks[index];
+	}
+
+	function endTaskPointerDrag(event: PointerEvent) {
+		if (event.pointerId !== pointerDragId || !draggedTask) return;
+		const fromIndex = appStore.tasks.indexOf(draggedTask);
+		const toIndex = dragTarget ? appStore.tasks.indexOf(dragTarget) : -1;
+		const handle = event.currentTarget as HTMLButtonElement;
+		if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+		pointerDragId = undefined;
+		draggedTask = undefined;
+		dragTarget = undefined;
+		if (fromIndex >= 0 && toIndex >= 0) void moveTask(fromIndex, toIndex);
+	}
+
+	function cancelTaskPointerDrag(event: PointerEvent) {
+		if (event.pointerId !== pointerDragId) return;
+		pointerDragId = undefined;
+		draggedTask = undefined;
+		dragTarget = undefined;
+	}
+
 	function overTaskDrag(index: number, event: DragEvent) {
 		if (!draggedTask) return;
 		event.preventDefault();
@@ -91,6 +130,7 @@
 	}
 
 	function endTaskDrag() {
+		pointerDragId = undefined;
 		draggedTask = undefined;
 		dragTarget = undefined;
 	}
@@ -286,6 +326,10 @@
 									ondragover={overTaskDrag}
 									ondrop={dropTask}
 									ondragend={endTaskDrag}
+									onpointerdragstart={startTaskPointerDrag}
+									onpointerdragmove={overTaskPointerDrag}
+									onpointerdragend={endTaskPointerDrag}
+									onpointerdragcancel={cancelTaskPointerDrag}
 									dragging={draggedTask === task}
 									dropTarget={dragTarget === task && draggedTask !== task}
 								/>

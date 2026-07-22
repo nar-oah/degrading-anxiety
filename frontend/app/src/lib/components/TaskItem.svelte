@@ -11,6 +11,10 @@
 		ondragover,
 		ondrop,
 		ondragend,
+		onpointerdragstart,
+		onpointerdragmove,
+		onpointerdragend,
+		onpointerdragcancel,
 		dragging = false,
 		dropTarget = false
 	}: {
@@ -23,6 +27,10 @@
 		ondragover: (index: number, event: DragEvent) => void;
 		ondrop: (index: number, event: DragEvent) => void;
 		ondragend: () => void;
+		onpointerdragstart: (index: number, event: PointerEvent) => void;
+		onpointerdragmove: (event: PointerEvent) => void;
+		onpointerdragend: (event: PointerEvent) => void;
+		onpointerdragcancel: (event: PointerEvent) => void;
 		dragging?: boolean;
 		dropTarget?: boolean;
 	} = $props();
@@ -104,6 +112,7 @@
 </script>
 
 <li
+	data-task-index={index}
 	class={`rounded-2xl border bg-white p-4 transition sm:p-5 ${
 		dropTarget
 			? 'border-emerald-400 ring-2 ring-emerald-100'
@@ -176,11 +185,15 @@
 			<button
 				type="button"
 				draggable="true"
-				class="mt-0.5 flex h-9 w-11 shrink-0 cursor-grab items-center justify-center gap-1 rounded-xl bg-emerald-50 text-sm font-800 text-emerald-700 transition hover:bg-emerald-100 active:cursor-grabbing"
+				class="mt-0.5 flex h-9 w-11 shrink-0 touch-none select-none cursor-grab items-center justify-center gap-1 rounded-xl bg-emerald-50 text-sm font-800 text-emerald-700 transition hover:bg-emerald-100 active:cursor-grabbing"
 				aria-label={`拖动调整第 ${index + 1} 项任务的顺序，或使用上下方向键`}
 				title="拖动调整顺序"
 				ondragstart={(event) => ondragstart(index, event)}
 				ondragend={ondragend}
+				onpointerdown={(event) => onpointerdragstart(index, event)}
+				onpointermove={onpointerdragmove}
+				onpointerup={onpointerdragend}
+				onpointercancel={onpointerdragcancel}
 				onkeydown={moveWithKeyboard}
 			>
 				<span>{index + 1}</span>
