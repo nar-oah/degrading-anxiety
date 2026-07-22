@@ -55,11 +55,12 @@
 		busy = true;
 		error = '';
 		try {
+			const today = new Date();
 			await onupdate(index, {
 				...routine,
 				summary: text,
-				dtstart: toTodayDateTime(startTime),
-				dtend: toTodayDateTime(endTime),
+				dtstart: toTodayDateTime(startTime, today),
+				dtend: toTodayDateTime(endTime, today),
 				description: routine.description || text
 			});
 			editing = false;

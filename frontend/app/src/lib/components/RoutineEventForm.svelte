@@ -22,10 +22,15 @@
 	const toInputValue = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 	function resetTime() {
-		const start = new Date();
+		const now = new Date();
+		const start = new Date(now);
 		start.setSeconds(0, 0);
 		start.setMinutes(Math.ceil((start.getMinutes() + 1) / 30) * 30);
 		const end = new Date(start.getTime() + 30 * 60 * 1000);
+		if (end.getDate() !== now.getDate()) {
+			start.setHours(23, 0);
+			end.setTime(start.getTime() + 30 * 60 * 1000);
+		}
 		startTime = toInputValue(start);
 		endTime = toInputValue(end);
 	}
@@ -53,10 +58,11 @@
 		saving = true;
 		error = '';
 		try {
+			const today = new Date();
 			await onadd({
 				summary: text,
-				dtstart: toTodayDateTime(startTime),
-				dtend: toTodayDateTime(endTime),
+				dtstart: toTodayDateTime(startTime, today),
+				dtend: toTodayDateTime(endTime, today),
 				location: '',
 				description: text,
 				alarms: [15],

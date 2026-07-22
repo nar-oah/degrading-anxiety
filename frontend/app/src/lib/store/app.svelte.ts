@@ -107,11 +107,12 @@ export class AppStore {
 
 	async arrangeToday(): Promise<string> {
 		const token = this.#getToken();
+		const today = new Date();
 		for (const event of this.events) {
 			const requestId = await this.api.addEvent(token, {
 				...event,
-				dtstart: toTodayDateTime(toRoutineTime(event.dtstart)),
-				dtend: toTodayDateTime(toRoutineTime(event.dtend))
+				dtstart: toTodayDateTime(toRoutineTime(event.dtstart), today),
+				dtend: toTodayDateTime(toRoutineTime(event.dtend), today)
 			});
 			if (!requestId) throw new Error(`日常任务“${event.summary}”添加失败，已停止安排`);
 		}
