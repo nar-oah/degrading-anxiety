@@ -105,4 +105,5 @@ jobs:
           releaseBody: Release for ${{ inputs.tag }}.
           releaseDraft: false
           prerelease: false
-          args: --apk
+          retryAttempts: 3
+          args: --apk --split-per-abi
