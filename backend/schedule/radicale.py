@@ -52,6 +52,7 @@ class Radicale:
             description=event.description,
             rrule=rrule if isinstance(rrule, dict) else get_weekly,
         )
+
         def add_alarm(minutes: int) -> None:
             alarm = Alarm()
             alarm.add("action", "DISPLAY")
@@ -59,7 +60,6 @@ class Radicale:
             alarm.add("description", f"{minutes}分钟前提醒")
             component: Component = create.component
             component.add_component(alarm)
-            return None
 
         list(map(add_alarm, event.alarms))
         create.save()

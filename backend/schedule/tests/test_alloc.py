@@ -79,7 +79,10 @@ class AllocTest(TestCase):
 
         start, end = Alloc(radicale, now).get_schedule(10, Arrange.EARLY)
 
-        self.assertEqual((start, end), (now.replace(hour=13, minute=30), now.replace(hour=13, minute=40)))
+        self.assertEqual(
+            (start, end),
+            (now.replace(hour=13, minute=30), now.replace(hour=13, minute=40)),
+        )
         self.assertEqual(
             radicale.time_queries,
             [(ALLOC_CALENDAR, now), (NORMAL_CALENDAR, now)],

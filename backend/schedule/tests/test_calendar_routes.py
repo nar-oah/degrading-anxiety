@@ -14,7 +14,9 @@ class FakeRadicale:
     def add_event(self, name: str, event: REvent) -> None:
         self.added.append((name, event))
 
-    def get_times(self, name: str, day: datetime):
+    def get_times(
+        self, name: str, day: datetime
+    ) -> tuple[tuple[datetime, datetime], ...]:
         return iter(())
 
 

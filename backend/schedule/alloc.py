@@ -71,8 +71,7 @@ class Alloc:
         events = filter(lambda event: get_start(event) >= current.timestamp(), events)
         self.slots.chop(get_piece(current), get_piece(delay_dt))
         self.day = delay_dt
-        for event in events:
-            mod_event(event, self.get_schedule(get_dur(event)))
+        list(map(lambda event: mod_event(event, self.get_schedule(get_dur(event))), events))
 
 
 if __name__ == "__main__":
