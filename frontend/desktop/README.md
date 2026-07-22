@@ -51,10 +51,10 @@ password=<keystore and key password>
 storeFile=<absolute path to the .jks file>
 ```
 
-Build the universal APK from this directory with:
+Build one APK per Android ABI from this directory with:
 
 ```sh
-pnpm tauri android build --apk --ci
+pnpm tauri android build --apk --split-per-abi --ci
 ```
 
 The tag release workflow reconstructs the same properties file from these GitHub Actions Secrets:
