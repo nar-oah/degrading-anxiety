@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from alloc import Alloc
-from radicale import Radicale
+from radicale import ALLOC_CALENDAR, Radicale
 from pathlib import Path
 import bcrypt
 import fcntl
@@ -22,7 +22,7 @@ def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
         )
 
     def add_event(event: REvent) -> None:
-        radicale.add_event(event)
+        radicale.add_event(ALLOC_CALENDAR, event)
 
     alloc = Alloc(radicale)
     list(map(lambda task: add_event(get_event(task, alloc)), tasks))
