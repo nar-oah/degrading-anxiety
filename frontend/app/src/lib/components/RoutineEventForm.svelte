@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { REvent } from '../api/index.js';
+	import { toMinutes, toTodayDateTime } from '../routine.js';
 
 	let {
 		onadd,
@@ -11,23 +12,22 @@
 	} = $props();
 
 	let summary = $state('');
-	let dtstart = $state('');
-	let dtend = $state('');
+	let startTime = $state('');
+	let endTime = $state('');
 	let error = $state('');
 	let saving = $state(false);
 	let summaryInput: HTMLInputElement;
 
 	const pad = (value: number) => String(value).padStart(2, '0');
-	const toInputValue = (date: Date) =>
-		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+	const toInputValue = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 	function resetTime() {
 		const start = new Date();
 		start.setSeconds(0, 0);
 		start.setMinutes(Math.ceil((start.getMinutes() + 1) / 30) * 30);
 		const end = new Date(start.getTime() + 30 * 60 * 1000);
-		dtstart = toInputValue(start);
-		dtend = toInputValue(end);
+		startTime = toInputValue(start);
+		endTime = toInputValue(end);
 	}
 
 	onMount(resetTime);
@@ -35,19 +35,17 @@
 	async function addEvent(submit: SubmitEvent) {
 		submit.preventDefault();
 		const text = summary.trim();
-		const start = new Date(dtstart);
-		const end = new Date(dtend);
 
 		if (!text) {
 			error = '请填写日常任务内容';
 			summaryInput?.focus();
 			return;
 		}
-		if (!dtstart || !dtend || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+		if (!startTime || !endTime) {
 			error = '请选择有效的开始和结束时间';
 			return;
 		}
-		if (end <= start) {
+		if (toMinutes(endTime) <= toMinutes(startTime)) {
 			error = '结束时间需要晚于开始时间';
 			return;
 		}
@@ -57,8 +55,8 @@
 		try {
 			await onadd({
 				summary: text,
-				dtstart,
-				dtend,
+				dtstart: toTodayDateTime(startTime),
+				dtend: toTodayDateTime(endTime),
 				location: '',
 				description: text,
 				alarms: [15],
@@ -99,12 +97,12 @@
 
 		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700">
 			<span>开始时间</span>
-			<input bind:value={dtstart} class="box-border h-11 min-w-0 rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="datetime-local" step="60" disabled={disabled || saving} />
+			<input bind:value={startTime} class="box-border h-11 min-w-0 rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="time" step="60" disabled={disabled || saving} />
 		</label>
 
 		<label class="grid min-w-0 gap-1.5 text-sm font-600 text-stone-700">
 			<span>结束时间</span>
-			<input bind:value={dtend} class="box-border h-11 min-w-0 rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="datetime-local" step="60" disabled={disabled || saving} />
+			<input bind:value={endTime} class="box-border h-11 min-w-0 rounded-xl border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="time" step="60" disabled={disabled || saving} />
 		</label>
 
 		<button type="submit" class="box-border h-11 w-full rounded-xl bg-stone-900 px-5 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300 sm:col-span-2" disabled={disabled || saving}>

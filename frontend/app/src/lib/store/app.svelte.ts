@@ -1,4 +1,5 @@
 import type { Api, REvent, Task, TaskList } from '../api/index.js';
+import { toRoutineTime, toTodayDateTime } from '../routine.js';
 import type { Store } from './storage.js';
 
 const TOKEN = 'token';
@@ -107,7 +108,11 @@ export class AppStore {
 	async arrangeToday(): Promise<string> {
 		const token = this.#getToken();
 		for (const event of this.events) {
-			const requestId = await this.api.addEvent(token, event);
+			const requestId = await this.api.addEvent(token, {
+				...event,
+				dtstart: toTodayDateTime(toRoutineTime(event.dtstart)),
+				dtend: toTodayDateTime(toRoutineTime(event.dtend))
+			});
 			if (!requestId) throw new Error(`日常任务“${event.summary}”添加失败，已停止安排`);
 		}
 		const requestId = await this.api.addAlloc(token, this.tasks);
