@@ -29,3 +29,20 @@ class CourseParserTest(TestCase):
             events = list(ClassParser(b"excel", date(2026, 9, 14)).get_parse())
 
         self.assertEqual(events, [])
+
+    def test_irregular_weeks_do_not_add_missing_week(self) -> None:
+        frame = pd.DataFrame(index=range(9), columns=range(8))
+        frame.iloc[1, 1] = (
+            "跳周课程◇教师丙◇◇2,4,6,10,12,14,16([周])[01-02节]◇M1-103"
+        )
+        with patch("parser.course.pd.read_excel", return_value=frame):
+            events = list(ClassParser(b"excel", date(2026, 9, 14)).get_parse())
+
+        self.assertEqual(
+            list(map(lambda event: event.dtstart, events)),
+            [datetime(2026, 9, 14, 8, 20), datetime(2026, 11, 9, 8, 20)],
+        )
+        self.assertEqual(
+            list(map(lambda event: event.repeat, events)),
+            [(3, 2), (4, 2)],
+        )
