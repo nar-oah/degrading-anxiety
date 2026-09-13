@@ -128,6 +128,13 @@ export class AppStore {
 		return requestId;
 	}
 
+	async addCourse(date: string): Promise<string> {
+		if (!date) throw new Error('请选择开学日期');
+		const requestId = await this.api.addCourse(this.#getToken(), date);
+		if (!requestId) throw new Error('课表导入请求提交失败，请稍后重试');
+		return requestId;
+	}
+
 	async exportCalendar(date: string): Promise<Blob> {
 		const token = this.#getToken();
 		const calendar = await this.api.getExport(token, date);

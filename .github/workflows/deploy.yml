@@ -28,6 +28,7 @@ jobs:
       matrix:
         service:
           - api
+          - course
           - schedule
           - radicale
 

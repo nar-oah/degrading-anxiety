@@ -42,6 +42,13 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
+		async addCourse(token: string, date: string): Promise<string | undefined> {
+			const { data, error } = await api.POST('/course', {
+				params: { query: { token, date } }
+			});
+			if (!error) return data;
+		},
+
 		async getExport(token: string, date: string): Promise<Blob | undefined> {
 			const { data, error } = await api.GET('/export', {
 				params: { query: { token, date } },

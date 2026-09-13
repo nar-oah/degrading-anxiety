@@ -1,15 +1,13 @@
 from datetime import date
-from celery import Celery
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from degrading_anxiety_contracts.schedule import REvent, TaskList
 from secrets import token_urlsafe
+from tasks import add_course_task, add_task
 
 app = FastAPI(title="Degrading Anxiety API")
 app.add_middleware(
@@ -19,21 +17,17 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )
-celery_app = Celery(
-    "api",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/1",
-)
 EXPORT_TIMEOUT = 30
 
 
-def add_task(name: str, token: str, value: BaseModel | int | str) -> AsyncResult:
-    arg = value.model_dump(mode="json") if isinstance(value, BaseModel) else value
-    return celery_app.send_task(
-        name,
-        args=[token, arg],
-        queue="schedule",
-    )
+def get_course_date(value: date) -> date:
+    def get_error() -> date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Course start date must be a Monday",
+        )
+
+    return value if value.weekday() == 0 else get_error()
 
 
 @app.exception_handler(RequestValidationError)
@@ -62,6 +56,11 @@ def mod_schedule(token: str, minute: int) -> str | None:
 @app.post("/alloc", response_model=str, status_code=status.HTTP_202_ACCEPTED)
 def add_alloc(token: str, tasks: TaskList) -> str | None:
     return add_task("schedule.alloc", token, tasks).id
+
+
+@app.post("/course", response_model=str, status_code=status.HTTP_202_ACCEPTED)
+def add_course(token: str, date: date) -> str | None:
+    return add_course_task(token, get_course_date(date)).id
 
 
 @app.get("/export", responses={504: {"description": "Export timed out"}})

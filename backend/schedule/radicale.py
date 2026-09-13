@@ -10,8 +10,9 @@ type Events = Iterable[tuple[datetime, datetime]]
 type Rrule = dict[str, str | int]
 WEEK_DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 ALLOC_CALENDAR = "Alloc"
+COURSE_CALENDAR = "Course"
 NORMAL_CALENDAR = "Normal"
-CALENDARS = (ALLOC_CALENDAR, NORMAL_CALENDAR)
+CALENDARS = (ALLOC_CALENDAR, NORMAL_CALENDAR, COURSE_CALENDAR)
 URL = "http://radicale:5232/"
 
 
