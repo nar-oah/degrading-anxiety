@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from alloc import Alloc
 from degrading_anxiety_contracts.schedule import Arrange
-from radicale import ALLOC_CALENDAR, NORMAL_CALENDAR
+from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, NORMAL_CALENDAR
 
 
 class FakeEvent:
@@ -53,16 +53,21 @@ class AllocTest(TestCase):
         in_delay = FakeEvent(now + timedelta(minutes=5), 10)
         future = FakeEvent(now + timedelta(hours=1), 10)
         fixed = FakeEvent(now + timedelta(minutes=30), 15)
+        course = FakeEvent(now + timedelta(hours=3), 30)
         radicale = FakeRadicale(
             {
                 ALLOC_CALENDAR: [past, in_delay, future],
                 NORMAL_CALENDAR: [fixed],
+                COURSE_CALENDAR: [course],
             }
         )
 
-        Alloc(radicale, now, (NORMAL_CALENDAR,)).mod_schedule(15)
+        Alloc(radicale, now, (NORMAL_CALENDAR, COURSE_CALENDAR)).mod_schedule(15)
 
-        self.assertEqual(radicale.time_queries, [(NORMAL_CALENDAR, now)])
+        self.assertEqual(
+            radicale.time_queries,
+            [(NORMAL_CALENDAR, now), (COURSE_CALENDAR, now)],
+        )
         self.assertEqual(radicale.event_queries, [(ALLOC_CALENDAR, now)])
         self.assertEqual(past.saved, 0)
         self.assertEqual(in_delay.saved, 1)
@@ -74,7 +79,11 @@ class AllocTest(TestCase):
         normal = FakeEvent(now.replace(minute=30), 30)
         allocated = FakeEvent(now.replace(hour=13, minute=10), 10)
         radicale = FakeRadicale(
-            {ALLOC_CALENDAR: [allocated], NORMAL_CALENDAR: [normal]}
+            {
+                ALLOC_CALENDAR: [allocated],
+                NORMAL_CALENDAR: [normal],
+                COURSE_CALENDAR: [],
+            }
         )
 
         start, end = Alloc(radicale, now).get_schedule(10, Arrange.EARLY)
@@ -85,5 +94,9 @@ class AllocTest(TestCase):
         )
         self.assertEqual(
             radicale.time_queries,
-            [(ALLOC_CALENDAR, now), (NORMAL_CALENDAR, now)],
+            [
+                (ALLOC_CALENDAR, now),
+                (NORMAL_CALENDAR, now),
+                (COURSE_CALENDAR, now),
+            ],
         )

@@ -38,7 +38,7 @@ def add_course(events: REventList, token: str) -> None:
 
 @celery_app.task(name="schedule.delay", ignore_result=True)
 def mod_schedule(token: str, minute: int) -> None:
-    calendars = (COURSE_CALENDAR, NORMAL_CALENDAR)
+    calendars = (NORMAL_CALENDAR, COURSE_CALENDAR)
     Alloc(get_radicale(token), calendars=calendars).mod_schedule(minute)
 
 

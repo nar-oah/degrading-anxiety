@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from unittest import TestCase
 from unittest.mock import patch
 import main
-from degrading_anxiety_contracts.schedule import REvent, Task
+from degrading_anxiety_contracts.schedule import REvent, REventList, Task
 from new import add_schedule
-from radicale import ALLOC_CALENDAR, NORMAL_CALENDAR
+from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, NORMAL_CALENDAR
 
 
 class FakeRadicale:
@@ -31,6 +31,17 @@ class CalendarRoutesTest(TestCase):
             main.add_event.run("token", event)
 
         self.assertEqual(radicale.added, [(NORMAL_CALENDAR, event)])
+
+    def test_add_course_uses_course_calendar(self) -> None:
+        radicale = FakeRadicale()
+        start = datetime(2026, 9, 14, 8, 20)
+        event = REvent(summary="course", dtstart=start, dtend=start + timedelta(hours=1))
+        events = REventList(root=[event]).model_dump(mode="json")
+
+        with patch.object(main, "get_radicale", return_value=radicale):
+            main.add_course.run(events, "token")
+
+        self.assertEqual(radicale.added, [(COURSE_CALENDAR, event)])
 
     def test_add_alloc_uses_alloc_calendar(self) -> None:
         radicale = FakeRadicale()

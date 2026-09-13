@@ -33,7 +33,11 @@ class ClassParser:
         def get_cell(position: tuple[int, int]) -> Iterable[Course]:
             day, slot = position
             value = self.df.iloc[slot + OFFSET, day + OFFSET]
-            rows = value.strip().split("\n") if isinstance(value, str) and value.strip() else []
+            rows = (
+                value.strip().split("\n")
+                if isinstance(value, str) and value.strip()
+                else []
+            )
             return map(lambda row: (row.strip().split("◇"), day, slot), rows)
 
         positions = product(range(7), range(len(TIME_TABLE)))
@@ -66,5 +70,8 @@ class ClassParser:
 
     def get_parse(self) -> Iterable[REvent]:
         courses = list(self.get_courses())
-        anchor_week = min(map(lambda value: get_week(value[0][3])[0], courses), default=1)
+        anchor_week = min(
+            map(lambda value: get_week(value[0][3])[0], courses),
+            default=1,
+        )
         return map(lambda value: self.get_event(value, anchor_week), courses)
