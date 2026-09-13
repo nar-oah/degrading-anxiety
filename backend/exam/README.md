@@ -7,5 +7,5 @@ events to the schedule worker through Celery.
 Configure the same numeric teaching-system user used by the course worker:
 
 ```dotenv
-COURSE_USER=23131116
+COURSE_USER=your-numeric-student-id
 ```

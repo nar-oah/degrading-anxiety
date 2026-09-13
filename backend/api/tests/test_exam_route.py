@@ -1,20 +1,23 @@
-from io import BytesIO
 from types import SimpleNamespace
-from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest import TestCase
 from unittest.mock import call, patch
 import main
 import tasks
-from fastapi import UploadFile
+from fastapi.testclient import TestClient
 
 
-class ExamRouteTest(IsolatedAsyncioTestCase):
-    async def test_exam_route_returns_chain_id(self) -> None:
+class ExamRouteTest(TestCase):
+    def test_exam_route_accepts_excel_upload(self) -> None:
         result = SimpleNamespace(id="exam-task-id")
-        upload = UploadFile(BytesIO(b"excel"), filename="exam.xls")
         with patch.object(main, "add_exam_task", return_value=result) as add_exam:
-            task_id = await main.add_exam("token", upload)
+            response = TestClient(main.app).post(
+                "/exam",
+                params={"token": "token"},
+                files={"file": ("exam.xls", b"excel", "application/vnd.ms-excel")},
+            )
 
-        self.assertEqual(task_id, "exam-task-id")
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json(), "exam-task-id")
         add_exam.assert_called_once_with("token", b"excel")
 
 

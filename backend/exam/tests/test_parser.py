@@ -8,7 +8,7 @@ class ExamParserTest(TestCase):
     def get_parser(self, schedule: pd.DataFrame) -> ExamParser:
         parser = ExamParser.__new__(ExamParser)
         parser.students = pd.DataFrame(
-            {"学号": [23131116, 23131117], "课程编号": ["FT03P207", "OTHER"]}
+            {"学号": [23000001, 23000002], "课程编号": ["FT03P207", "OTHER"]}
         )
         parser.schedule = (schedule,)
         return parser
@@ -28,7 +28,7 @@ class ExamParserTest(TestCase):
             }
         )
 
-        events = list(self.get_parser(schedule).get_exam(23131116))
+        events = list(self.get_parser(schedule).get_exam(23000001))
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].summary, "金融风险管理")
@@ -50,7 +50,7 @@ class ExamParserTest(TestCase):
             }
         )
 
-        event = next(self.get_parser(schedule).get_exam(23131116))
+        event = next(self.get_parser(schedule).get_exam(23000001))
 
         self.assertEqual(event.dtstart, datetime(2026, 9, 17, 10, 10))
         self.assertEqual(event.dtend, datetime(2026, 9, 17, 11, 50))

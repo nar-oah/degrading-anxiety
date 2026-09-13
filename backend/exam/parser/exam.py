@@ -1,11 +1,9 @@
-from collections.abc import Callable, Hashable, Iterable
+from collections.abc import Hashable, Iterable
 from datetime import datetime, time
 from io import BytesIO
 from itertools import chain
 import pandas as pd
 from degrading_anxiety_contracts.schedule import REvent
-
-type Make = Callable[[pd.DataFrame], pd.Series]
 
 
 def get_column(data: pd.DataFrame | pd.Series, text: str) -> str | None:
@@ -14,15 +12,17 @@ def get_column(data: pd.DataFrame | pd.Series, text: str) -> str | None:
 
 class ExamParser:
     def __init__(self, excel_bytes: bytes) -> None:
-        def get_sheets(
-            excel: pd.ExcelFile,
-            texts: tuple[str, ...],
-        ) -> Iterable[pd.DataFrame]:
+        def get_sheets(excel: pd.ExcelFile, texts: tuple[str, ...]) -> Iterable[pd.DataFrame]:
             def get_sheet(name: str) -> pd.DataFrame:
                 return pd.read_excel(excel, sheet_name=name, skiprows=1)
 
             def get_match(sheet: pd.DataFrame) -> bool:
-                return all(map(lambda text: isinstance(get_column(sheet, text), str), texts))
+                return all(
+                    map(
+                        lambda text: isinstance(get_column(sheet, text), str),
+                        texts,
+                    )
+                )
 
             return filter(get_match, map(get_sheet, excel.sheet_names))
 
@@ -34,14 +34,17 @@ class ExamParser:
         def get_rows() -> Iterable[tuple[Hashable, pd.Series]]:
             student_rows = self.students[self.students["学号"] == student_id]
             course_ids: list[str] = student_rows["课程编号"].tolist()
-            is_ids: Make = lambda schedule: schedule.loc[
-                :, get_column(schedule, "课程编号")
-            ].isin(course_ids)
-            is_date: Make = lambda schedule: schedule.loc[
-                :, get_column(schedule, "日期")
-            ].ne("无")
+
+            def get_ids(schedule: pd.DataFrame) -> pd.Series:
+                return schedule.loc[:, get_column(schedule, "课程编号")].isin(
+                    course_ids
+                )
+
+            def get_date(schedule: pd.DataFrame) -> pd.Series:
+                return schedule.loc[:, get_column(schedule, "日期")].ne("无")
+
             rows = map(
-                lambda value: value[is_ids(value) & is_date(value)].iterrows(),
+                lambda value: value[get_ids(value) & get_date(value)].iterrows(),
                 self.schedule,
             )
             return chain.from_iterable(rows)

@@ -52,10 +52,10 @@ export function createApi(fetch: Fetch) {
 		async addExam(token: string, file: File): Promise<string | undefined> {
 			const { data, error } = await api.POST('/exam', {
 				params: { query: { token } },
-				body: { file },
-				bodySerializer(body) {
+				body: { file: file.name },
+				bodySerializer() {
 					const data = new FormData();
-					data.append('file', body.file);
+					data.append('file', file);
 					return data;
 				}
 			});
