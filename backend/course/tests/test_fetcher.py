@@ -1,7 +1,7 @@
 from datetime import date
 from unittest import TestCase
 from unittest.mock import Mock
-from fetcher.course import BUFTFetcher
+from fetcher.course import BUFTFetcher, XLS_SIGNATURE
 
 
 class CourseFetcherTest(TestCase):
@@ -20,15 +20,22 @@ class CourseFetcherTest(TestCase):
         )
 
     def test_semester_comes_from_submitted_date(self) -> None:
-        response = Mock(content=b"excel")
+        response = Mock(content=XLS_SIGNATURE + b"excel")
         client = Mock()
         client.post.return_value = response
 
         excel = BUFTFetcher(client, "http://example.test").get_excel(date(2026, 9, 14))
 
-        self.assertEqual(excel, b"excel")
+        self.assertEqual(excel, XLS_SIGNATURE + b"excel")
         response.raise_for_status.assert_called_once_with()
         client.post.assert_called_once_with(
             "http://example.test/bjgsdxjhxy_jsxsd/xskb/xskb_print.do",
             params={"xnxq01id": "2026-2027-1", "zc": ""},
         )
+
+    def test_html_response_is_not_treated_as_timetable(self) -> None:
+        client = Mock()
+        client.post.return_value = Mock(content=b"<html>login</html>")
+
+        with self.assertRaisesRegex(ValueError, "did not return an Excel"):
+            BUFTFetcher(client, "http://example.test").get_excel(date(2026, 9, 14))

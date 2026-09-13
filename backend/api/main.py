@@ -50,6 +50,16 @@ def add_course_task(token: str, day: date) -> AsyncResult:
     return chain(get_course, add_course).apply_async()
 
 
+def get_course_date(value: date) -> date:
+    def get_error() -> date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Course start date must be a Monday",
+        )
+
+    return value if value.weekday() == 0 else get_error()
+
+
 @app.exception_handler(RequestValidationError)
 def get_validation(_: Request, error: RequestValidationError) -> JSONResponse:
     return JSONResponse(
@@ -80,7 +90,7 @@ def add_alloc(token: str, tasks: TaskList) -> str | None:
 
 @app.post("/course", response_model=str, status_code=status.HTTP_202_ACCEPTED)
 def add_course(token: str, date: date) -> str | None:
-    return add_course_task(token, date).id
+    return add_course_task(token, get_course_date(date)).id
 
 
 @app.get("/export", responses={504: {"description": "Export timed out"}})

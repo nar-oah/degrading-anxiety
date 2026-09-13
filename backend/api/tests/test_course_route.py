@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import call, patch
 import main
+from fastapi import HTTPException
 
 
 class CourseRouteTest(TestCase):
@@ -13,6 +14,12 @@ class CourseRouteTest(TestCase):
 
         self.assertEqual(task_id, "course-task-id")
         add_course.assert_called_once_with("token", date(2026, 9, 14))
+
+    def test_course_route_rejects_non_monday(self) -> None:
+        with self.assertRaises(HTTPException) as raised:
+            main.add_course("token", date(2026, 9, 15))
+
+        self.assertEqual(raised.exception.status_code, 400)
 
     def test_course_chain_routes_each_worker(self) -> None:
         result = SimpleNamespace(id="course-task-id")

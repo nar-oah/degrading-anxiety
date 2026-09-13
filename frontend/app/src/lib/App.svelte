@@ -405,12 +405,12 @@
 							<h2 id="course-title" class="m-0 text-lg font-800 text-stone-900">导入课表</h2>
 						</div>
 						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">
-							请选择实际开始上课的日期；若课表最早从第三周开始，该日期将对应第三周的课程。
+							请选择首个实际开课周的周一；若课表最早从第三周开始，该日期将对应第三周周一的课程。
 						</p>
 
 						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importCourse(); }}>
 							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="course-date">
-								开学日期
+								开学日期（周一）
 								<input id="course-date" bind:value={courseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" required disabled={!appStore.token || importingCourse} />
 							</label>
 							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !courseDate || importingCourse}>
