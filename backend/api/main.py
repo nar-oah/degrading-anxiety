@@ -1,5 +1,5 @@
 from datetime import date
-from celery import Celery
+from celery import Celery, chain
 from celery.exceptions import TimeoutError as CeleryTimeoutError
 from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Request, Response, status
@@ -36,6 +36,20 @@ def add_task(name: str, token: str, value: BaseModel | int | str) -> AsyncResult
     )
 
 
+def add_course_task(token: str, day: date) -> AsyncResult:
+    get_course = celery_app.signature(
+        "course.get",
+        args=[{"date": day.isoformat()}],
+        queue="course",
+    )
+    add_course = celery_app.signature(
+        "schedule.course",
+        args=[token],
+        queue="schedule",
+    )
+    return chain(get_course, add_course).apply_async()
+
+
 @app.exception_handler(RequestValidationError)
 def get_validation(_: Request, error: RequestValidationError) -> JSONResponse:
     return JSONResponse(
@@ -62,6 +76,11 @@ def mod_schedule(token: str, minute: int) -> str | None:
 @app.post("/alloc", response_model=str, status_code=status.HTTP_202_ACCEPTED)
 def add_alloc(token: str, tasks: TaskList) -> str | None:
     return add_task("schedule.alloc", token, tasks).id
+
+
+@app.post("/course", response_model=str, status_code=status.HTTP_202_ACCEPTED)
+def add_course(token: str, date: date) -> str | None:
+    return add_course_task(token, date).id
 
 
 @app.get("/export", responses={504: {"description": "Export timed out"}})

@@ -31,6 +31,15 @@ services:
       radicale:
         condition: service_healthy
 
+  course:
+    image: ghcr.io/nar-oah/degrading-anxiety/course:latest
+    container_name: degrading-anxiety-course
+    restart: unless-stopped
+    networks:
+      - backend
+    env_file:
+      - .env
+
   radicale:
     image: ghcr.io/nar-oah/degrading-anxiety/radicale:latest
     container_name: degrading-anxiety-radicale

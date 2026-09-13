@@ -1,0 +1,16 @@
+[project]
+name = "course"
+version = "0.1.0"
+description = "Fetch and parse course schedules"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "celery[redis]>=5.6.3",
+    "degrading-anxiety-contracts",
+    "httpx>=0.28.1",
+    "pandas>=3.0.0",
+    "xlrd>=2.0.2",
+]
+
+[tool.uv.sources]
+degrading-anxiety-contracts = { workspace = true }
