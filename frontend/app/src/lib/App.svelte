@@ -20,6 +20,9 @@
 	let delayMinutes = $state<number | undefined>(15);
 	let courseDate = $state('');
 	let importingCourse = $state(false);
+	let examFile = $state<File>();
+	let examInput = $state<HTMLInputElement>();
+	let importingExam = $state(false);
 	let exporting = $state(false);
 	let notice = $state<Notice>();
 	let draggedTask = $state<Task>();
@@ -184,6 +187,26 @@
 			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
 		} finally {
 			importingCourse = false;
+		}
+	}
+
+	function selectExam(event: Event) {
+		examFile = (event.currentTarget as HTMLInputElement).files?.[0];
+	}
+
+	async function importExam() {
+		if (!appStore.token || !examFile) return;
+		importingExam = true;
+		notice = undefined;
+		try {
+			await appStore.addExam(examFile);
+			examFile = undefined;
+			if (examInput) examInput.value = '';
+			notice = { tone: 'success', text: '考试安排导入请求已提交，考试将添加到 Exam 日历。' };
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '考试安排导入请求提交失败，请稍后重试') };
+		} finally {
+			importingExam = false;
 		}
 	}
 
@@ -415,6 +438,35 @@
 							</label>
 							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !courseDate || importingCourse}>
 								{importingCourse ? '正在导入…' : '导入课表'}
+							</button>
+						</form>
+					</section>
+
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="exam-title">
+						<div>
+							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-violet-700">Exam</p>
+							<h2 id="exam-title" class="m-0 text-lg font-800 text-stone-900">导入考试安排</h2>
+						</div>
+						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">
+							上传学校发布的 .xls 或 .xlsx 考试安排，系统会按教务账号筛选并写入 Exam 日历。
+						</p>
+
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importExam(); }}>
+							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="exam-file">
+								考试安排文件
+								<input
+									id="exam-file"
+									bind:this={examInput}
+									class="box-border w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-xs text-stone-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-700 file:text-violet-800 focus:border-violet-500 focus:ring-3 focus:ring-violet-100"
+									type="file"
+									accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+									required
+									disabled={!appStore.token || importingExam}
+									onchange={selectExam}
+								/>
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !examFile || importingExam}>
+								{importingExam ? '正在导入…' : '导入考试安排'}
 							</button>
 						</form>
 					</section>

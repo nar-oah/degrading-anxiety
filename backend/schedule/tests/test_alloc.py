@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from alloc import Alloc
 from degrading_anxiety_contracts.schedule import Arrange
-from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, NORMAL_CALENDAR
+from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR
 
 
 class FakeEvent:
@@ -59,6 +59,7 @@ class AllocTest(TestCase):
                 ALLOC_CALENDAR: [past, in_delay, future],
                 NORMAL_CALENDAR: [fixed],
                 COURSE_CALENDAR: [course],
+                EXAM_CALENDAR: [],
             }
         )
 
@@ -83,6 +84,7 @@ class AllocTest(TestCase):
                 ALLOC_CALENDAR: [allocated],
                 NORMAL_CALENDAR: [normal],
                 COURSE_CALENDAR: [],
+                EXAM_CALENDAR: [],
             }
         )
 
@@ -98,5 +100,6 @@ class AllocTest(TestCase):
                 (ALLOC_CALENDAR, now),
                 (NORMAL_CALENDAR, now),
                 (COURSE_CALENDAR, now),
+                (EXAM_CALENDAR, now),
             ],
         )

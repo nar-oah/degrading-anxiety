@@ -3,7 +3,7 @@ import re
 from celery import Celery
 from alloc import Alloc
 from new import add_schedule, add_user
-from radicale import COURSE_CALENDAR, NORMAL_CALENDAR, Radicale
+from radicale import COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR, Radicale
 from degrading_anxiety_contracts.schedule import REvent, REventList, TaskList
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
@@ -36,9 +36,20 @@ def add_course(events: REventList, token: str) -> None:
     list(map(lambda event: radicale.add_event(COURSE_CALENDAR, event), events.root))
 
 
+@celery_app.task(
+    name="schedule.exam",
+    pydantic=True,
+    pydantic_strict=False,
+    ignore_result=True,
+)
+def add_exam(events: REventList, token: str) -> None:
+    radicale = get_radicale(token)
+    list(map(lambda event: radicale.add_event(EXAM_CALENDAR, event), events.root))
+
+
 @celery_app.task(name="schedule.delay", ignore_result=True)
 def mod_schedule(token: str, minute: int) -> None:
-    calendars = (NORMAL_CALENDAR, COURSE_CALENDAR)
+    calendars = (NORMAL_CALENDAR, COURSE_CALENDAR, EXAM_CALENDAR)
     Alloc(get_radicale(token), calendars=calendars).mod_schedule(minute)
 
 

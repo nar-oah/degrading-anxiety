@@ -29,6 +29,7 @@ jobs:
         service:
           - api
           - course
+          - exam
           - schedule
           - radicale
 
