@@ -17,6 +17,15 @@ services:
       - "traefik.http.middlewares.degrading-anxiety-strip.stripprefix.prefixes=/degrading-anxiety"
       - "traefik.http.routers.degrading-anxiety.middlewares=degrading-anxiety-strip"
 
+  exam:
+    image: ghcr.io/nar-oah/degrading-anxiety/exam:latest
+    container_name: degrading-anxiety-exam
+    restart: unless-stopped
+    networks:
+      - backend
+    env_file:
+      - .env
+
   schedule:
     image: ghcr.io/nar-oah/degrading-anxiety/schedule:latest
     container_name: degrading-anxiety-schedule

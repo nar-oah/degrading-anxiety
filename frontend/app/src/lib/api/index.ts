@@ -49,6 +49,19 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
+		async addExam(token: string, file: File): Promise<string | undefined> {
+			const { data, error } = await api.POST('/exam', {
+				params: { query: { token } },
+				body: { file },
+				bodySerializer(body) {
+					const data = new FormData();
+					data.append('file', body.file);
+					return data;
+				}
+			});
+			if (!error) return data;
+		},
+
 		async getExport(token: string, date: string): Promise<Blob | undefined> {
 			const { data, error } = await api.GET('/export', {
 				params: { query: { token, date } },

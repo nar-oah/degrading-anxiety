@@ -31,3 +31,17 @@ def add_course_task(token: str, day: date) -> AsyncResult:
         queue="schedule",
     )
     return chain(get_course, add_course).apply_async()
+
+
+def add_exam_task(token: str, excel: bytes) -> AsyncResult:
+    get_exam = celery_app.signature(
+        "exam.get",
+        args=[excel],
+        queue="exam",
+    )
+    add_exam = celery_app.signature(
+        "schedule.exam",
+        args=[token],
+        queue="schedule",
+    )
+    return chain(get_exam, add_exam).apply_async()

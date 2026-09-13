@@ -135,6 +135,12 @@ export class AppStore {
 		return requestId;
 	}
 
+	async addExam(file: File): Promise<string> {
+		const requestId = await this.api.addExam(this.#getToken(), file);
+		if (!requestId) throw new Error('考试安排导入请求提交失败，请稍后重试');
+		return requestId;
+	}
+
 	async exportCalendar(date: string): Promise<Blob> {
 		const token = this.#getToken();
 		const calendar = await this.api.getExport(token, date);
