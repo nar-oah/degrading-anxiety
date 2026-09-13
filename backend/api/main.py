@@ -1,15 +1,13 @@
 from datetime import date
-from celery import Celery, chain
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from degrading_anxiety_contracts.schedule import REvent, TaskList
 from secrets import token_urlsafe
+from tasks import add_course_task, add_task
 
 app = FastAPI(title="Degrading Anxiety API")
 app.add_middleware(
@@ -19,35 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )
-celery_app = Celery(
-    "api",
-    broker="redis://redis:6379/0",
-    backend="redis://redis:6379/1",
-)
 EXPORT_TIMEOUT = 30
-
-
-def add_task(name: str, token: str, value: BaseModel | int | str) -> AsyncResult:
-    arg = value.model_dump(mode="json") if isinstance(value, BaseModel) else value
-    return celery_app.send_task(
-        name,
-        args=[token, arg],
-        queue="schedule",
-    )
-
-
-def add_course_task(token: str, day: date) -> AsyncResult:
-    get_course = celery_app.signature(
-        "course.get",
-        args=[{"date": day.isoformat()}],
-        queue="course",
-    )
-    add_course = celery_app.signature(
-        "schedule.course",
-        args=[token],
-        queue="schedule",
-    )
-    return chain(get_course, add_course).apply_async()
 
 
 def get_course_date(value: date) -> date:

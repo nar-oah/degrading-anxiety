@@ -23,7 +23,7 @@ def get_course(request: CourseRequest) -> REventList:
         def get_error() -> BUFTFetcher:
             raise PermissionError("Course system login failed")
 
-        logged_in = fetcher.login(
+        logged_in = fetcher.get_login(
             environ["COURSE_USER"],
             environ["COURSE_PASSWORD"],
         )

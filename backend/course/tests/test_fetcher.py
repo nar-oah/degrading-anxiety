@@ -10,7 +10,9 @@ class CourseFetcherTest(TestCase):
         client = Mock()
         client.post.return_value = response
 
-        logged_in = BUFTFetcher(client, "http://example.test/").login("user", "password")
+        logged_in = BUFTFetcher(client, "http://example.test/").get_login(
+            "user", "password"
+        )
 
         self.assertTrue(logged_in)
         response.raise_for_status.assert_called_once_with()

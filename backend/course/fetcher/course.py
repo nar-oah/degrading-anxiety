@@ -10,7 +10,7 @@ class BUFTFetcher:
         self.base_url = base_url.rstrip("/")
         self.client = client
 
-    def login(self, user: str, password: str) -> bool:
+    def get_login(self, user: str, password: str) -> bool:
         def get_token(value: str) -> str:
             return base64.b64encode(value.encode()).decode()
 

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import call, patch
 import main
+import tasks
 from fastapi import HTTPException
 
 
@@ -24,11 +25,11 @@ class CourseRouteTest(TestCase):
     def test_course_chain_routes_each_worker(self) -> None:
         result = SimpleNamespace(id="course-task-id")
         with (
-            patch.object(main.celery_app, "signature", side_effect=["fetch", "add"]) as signature,
-            patch.object(main, "chain") as add_chain,
+            patch.object(tasks.celery_app, "signature", side_effect=["fetch", "add"]) as signature,
+            patch.object(tasks, "chain") as add_chain,
         ):
             add_chain.return_value.apply_async.return_value = result
-            task = main.add_course_task("token", date(2026, 9, 14))
+            task = tasks.add_course_task("token", date(2026, 9, 14))
 
         self.assertEqual(task, result)
         self.assertEqual(
