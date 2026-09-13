@@ -18,6 +18,8 @@
 	let arranging = $state(false);
 	let delaying = $state(false);
 	let delayMinutes = $state<number | undefined>(15);
+	let courseDate = $state('');
+	let importingCourse = $state(false);
 	let exporting = $state(false);
 	let notice = $state<Notice>();
 	let draggedTask = $state<Task>();
@@ -168,6 +170,20 @@
 			notice = { tone: 'error', text: getMessage(value, '推迟请求提交失败，请稍后重试') };
 		} finally {
 			delaying = false;
+		}
+	}
+
+	async function importCourse() {
+		if (!appStore.token || !courseDate) return;
+		importingCourse = true;
+		notice = undefined;
+		try {
+			await appStore.addCourse(courseDate);
+			notice = { tone: 'success', text: '课表导入请求已提交，课程将添加到 Course 日历。' };
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
+		} finally {
+			importingCourse = false;
 		}
 	}
 
@@ -379,8 +395,28 @@
 						<CredentialRow label="用户名&密码" value={appStore.token} />
 
 						<p class="m-0 mt-4 rounded-xl bg-stone-50 px-3 py-2.5 text-xs leading-5 text-stone-500">
-							首次提交安排后会自动创建日历，此后即可在系统日历中添加该账户。
+							首次提交安排或导入课表后会自动创建日历，此后即可在系统日历中添加该账户。
 						</p>
+					</section>
+
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="course-title">
+						<div>
+							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-sky-700">Course</p>
+							<h2 id="course-title" class="m-0 text-lg font-800 text-stone-900">导入课表</h2>
+						</div>
+						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">
+							请选择实际开始上课的日期；若课表最早从第三周开始，该日期将对应第三周的课程。
+						</p>
+
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importCourse(); }}>
+							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="course-date">
+								开学日期
+								<input id="course-date" bind:value={courseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" required disabled={!appStore.token || importingCourse} />
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !courseDate || importingCourse}>
+								{importingCourse ? '正在导入…' : '导入课表'}
+							</button>
+						</form>
 					</section>
 
 					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="delay-title">
