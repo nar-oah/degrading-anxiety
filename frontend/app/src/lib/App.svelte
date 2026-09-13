@@ -411,7 +411,7 @@
 						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importCourse(); }}>
 							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="course-date">
 								开学日期（周一）
-								<input id="course-date" bind:value={courseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" required disabled={!appStore.token || importingCourse} />
+								<input id="course-date" bind:value={courseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" min="1970-01-05" step="7" required disabled={!appStore.token || importingCourse} />
 							</label>
 							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !courseDate || importingCourse}>
 								{importingCourse ? '正在导入…' : '导入课表'}
