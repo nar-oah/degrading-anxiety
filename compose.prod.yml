@@ -26,6 +26,15 @@ services:
     env_file:
       - .env
 
+  adjustment:
+    image: ghcr.io/nar-oah/degrading-anxiety/adjustment:latest
+    container_name: degrading-anxiety-adjustment
+    restart: unless-stopped
+    networks:
+      - backend
+    env_file:
+      - .env
+
   schedule:
     image: ghcr.io/nar-oah/degrading-anxiety/schedule:latest
     container_name: degrading-anxiety-schedule
