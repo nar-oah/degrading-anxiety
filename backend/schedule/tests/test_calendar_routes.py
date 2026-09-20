@@ -11,9 +11,14 @@ from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALE
 class FakeRadicale:
     def __init__(self) -> None:
         self.added: list[tuple[str, REvent]] = []
+        self.calls: list[str] = []
 
     def add_event(self, name: str, event: REvent) -> None:
         self.added.append((name, event))
+        self.calls.append(f"add:{name}")
+
+    def del_events(self, name: str) -> None:
+        self.calls.append(f"delete:{name}")
 
     def get_times(
         self, name: str, day: datetime
@@ -41,6 +46,18 @@ class CalendarRoutesTest(TestCase):
         with patch.object(main, "get_radicale", return_value=radicale):
             main.add_course.run(events, "token")
 
+        self.assertEqual(radicale.added, [(COURSE_CALENDAR, event)])
+
+    def test_replace_course_clears_before_writing_full_list(self) -> None:
+        radicale = FakeRadicale()
+        start = datetime(2026, 9, 14, 8, 20)
+        event = REvent(summary="course", dtstart=start, dtend=start + timedelta(hours=1))
+        events = REventList(root=[event]).model_dump(mode="json")
+
+        with patch.object(main, "get_radicale", return_value=radicale):
+            main.replace_course.run(events, "token")
+
+        self.assertEqual(radicale.calls, ["delete:Course", "add:Course"])
         self.assertEqual(radicale.added, [(COURSE_CALENDAR, event)])
 
     def test_add_exam_uses_exam_calendar(self) -> None:
