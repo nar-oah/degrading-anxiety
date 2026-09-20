@@ -11,4 +11,5 @@ members = [
     "schedule",
     "contracts",
     "exam",
+    "adjustment",
 ]
