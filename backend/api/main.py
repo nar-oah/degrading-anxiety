@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from degrading_anxiety_contracts.schedule import REvent, TaskList
 from secrets import token_urlsafe
-from tasks import add_course_task, add_exam_task, add_task
+from tasks import add_adjustment_task, add_course_task, add_exam_task, add_task
 
 app = FastAPI(title="Degrading Anxiety API")
 app.add_middleware(
@@ -66,6 +66,11 @@ def add_course(token: str, date: date) -> str | None:
 @app.post("/exam", response_model=str, status_code=status.HTTP_202_ACCEPTED)
 async def add_exam(token: str, file: UploadFile) -> str | None:
     return add_exam_task(token, await file.read()).id
+
+
+@app.post("/adjustment", response_model=str, status_code=status.HTTP_202_ACCEPTED)
+async def add_adjustment(token: str, date: date, file: UploadFile) -> str | None:
+    return add_adjustment_task(token, get_course_date(date), await file.read()).id
 
 
 @app.get("/export", responses={504: {"description": "Export timed out"}})
