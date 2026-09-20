@@ -5,11 +5,13 @@ import type { Store } from './storage.js';
 const TOKEN = 'token';
 const TASKS = 'tasks';
 const EVENTS = 'events';
+const COURSE_DATE = 'courseDate';
 
 export class AppStore {
 	token = $state<string>();
 	tasks = $state<TaskList>([]);
 	events = $state<REvent[]>([]);
+	courseDate = $state('');
 	loading = $state(false);
 	initialized = $state(false);
 	error = $state<unknown>();
@@ -35,6 +37,11 @@ export class AppStore {
 		if (!value) throw new Error('Token 不能为空');
 		await this.store.set(TOKEN, value);
 		this.token = value;
+	}
+
+	async setCourseDate(date: string): Promise<void> {
+		this.courseDate = date;
+		await this.store.set(COURSE_DATE, date);
 	}
 
 	async setTasks(tasks: TaskList): Promise<void> {
@@ -141,6 +148,13 @@ export class AppStore {
 		return requestId;
 	}
 
+	async addAdjustment(file: File): Promise<string> {
+		if (!this.courseDate) throw new Error('请先选择开学日期');
+		const requestId = await this.api.addAdjustment(this.#getToken(), this.courseDate, file);
+		if (!requestId) throw new Error('调休通知导入请求提交失败，请稍后重试');
+		return requestId;
+	}
+
 	async exportCalendar(date: string): Promise<Blob> {
 		const token = this.#getToken();
 		const calendar = await this.api.getExport(token, date);
@@ -153,15 +167,17 @@ export class AppStore {
 		this.error = undefined;
 
 		try {
-			const [savedToken, savedTasks, savedEvents] = await Promise.all([
+			const [savedToken, savedTasks, savedEvents, savedCourseDate] = await Promise.all([
 				this.store.get<string>(TOKEN),
 				this.store.get<TaskList>(TASKS),
-				this.store.get<REvent[]>(EVENTS)
+				this.store.get<REvent[]>(EVENTS),
+				this.store.get<string>(COURSE_DATE)
 			]);
 			const tasks = savedTasks ?? [];
 			const events = savedEvents ?? [];
 			this.tasks = tasks;
 			this.events = events;
+			this.courseDate = savedCourseDate ?? '';
 			if (savedTasks === undefined) await this.store.set(TASKS, tasks);
 			if (savedEvents === undefined) await this.store.set(EVENTS, events);
 

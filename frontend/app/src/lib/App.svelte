@@ -18,11 +18,10 @@
 	let arranging = $state(false);
 	let delaying = $state(false);
 	let delayMinutes = $state<number | undefined>(15);
-	let courseDate = $state('');
 	let importingCourse = $state(false);
-	let examFile = $state<File>();
-	let examInput = $state<HTMLInputElement>();
-	let importingExam = $state(false);
+	let academicFile = $state<File>();
+	let academicInput = $state<HTMLInputElement>();
+	let importingAcademicFile = $state(false);
 	let exporting = $state(false);
 	let notice = $state<Notice>();
 	let draggedTask = $state<Task>();
@@ -177,11 +176,11 @@
 	}
 
 	async function importCourse() {
-		if (!appStore.token || !courseDate) return;
+		if (!appStore.token || !appStore.courseDate) return;
 		importingCourse = true;
 		notice = undefined;
 		try {
-			await appStore.addCourse(courseDate);
+			await appStore.addCourse(appStore.courseDate);
 			notice = { tone: 'success', text: '课表导入请求已提交，课程将添加到 Course 日历。' };
 		} catch (value) {
 			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
@@ -190,23 +189,36 @@
 		}
 	}
 
-	function selectExam(event: Event) {
-		examFile = (event.currentTarget as HTMLInputElement).files?.[0];
+	async function updateCourseDate(event: Event) {
+		try {
+			await appStore.setCourseDate((event.currentTarget as HTMLInputElement).value);
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '开学日期保存失败，请重试') };
+		}
 	}
 
-	async function importExam() {
-		if (!appStore.token || !examFile) return;
-		importingExam = true;
+	function selectAcademicFile(event: Event) {
+		academicFile = (event.currentTarget as HTMLInputElement).files?.[0];
+	}
+
+	async function importAcademicFile() {
+		if (!appStore.token || !academicFile) return;
+		importingAcademicFile = true;
 		notice = undefined;
 		try {
-			await appStore.addExam(examFile);
-			examFile = undefined;
-			if (examInput) examInput.value = '';
-			notice = { tone: 'success', text: '考试安排导入请求已提交，考试将添加到 Exam 日历。' };
+			const isPdf = /\.pdf$/i.test(academicFile.name);
+			if (isPdf) await appStore.addAdjustment(academicFile);
+			else if (/\.xlsx?$/i.test(academicFile.name)) await appStore.addExam(academicFile);
+			else throw new Error('请选择 .xls、.xlsx 或 .pdf 文件');
+			academicFile = undefined;
+			if (academicInput) academicInput.value = '';
+			notice = isPdf
+				? { tone: 'success', text: '调休通知导入请求已提交，Course 日历将按通知更新。' }
+				: { tone: 'success', text: '考试安排导入请求已提交，考试将添加到 Exam 日历。' };
 		} catch (value) {
-			notice = { tone: 'error', text: getMessage(value, '考试安排导入请求提交失败，请稍后重试') };
+			notice = { tone: 'error', text: getMessage(value, '教务文件导入请求提交失败，请稍后重试') };
 		} finally {
-			importingExam = false;
+			importingAcademicFile = false;
 		}
 	}
 
@@ -434,39 +446,39 @@
 						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importCourse(); }}>
 							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="course-date">
 								开学日期（周一）
-								<input id="course-date" bind:value={courseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" min="1970-01-05" step="7" required disabled={!appStore.token || importingCourse} />
+								<input id="course-date" value={appStore.courseDate} onchange={updateCourseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" min="1970-01-05" step="7" required disabled={!appStore.token || importingCourse} />
 							</label>
-							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !courseDate || importingCourse}>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !appStore.courseDate || importingCourse}>
 								{importingCourse ? '正在导入…' : '导入课表'}
 							</button>
 						</form>
 					</section>
 
-					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="exam-title">
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="academic-title">
 						<div>
-							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-violet-700">Exam</p>
-							<h2 id="exam-title" class="m-0 text-lg font-800 text-stone-900">导入考试安排</h2>
+							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-violet-700">Academic</p>
+							<h2 id="academic-title" class="m-0 text-lg font-800 text-stone-900">导入教务文件</h2>
 						</div>
 						<p class="m-0 mt-1.5 text-xs leading-5 text-stone-500">
-							上传学校发布的 .xls 或 .xlsx 考试安排，系统会按教务账号筛选并写入 Exam 日历。
+							.xls/.xlsx 考试安排写入 Exam 日历；.pdf 调休通知根据上方保存的开学日期更新 Course 日历。
 						</p>
 
-						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importExam(); }}>
-							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="exam-file">
-								考试安排文件
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void importAcademicFile(); }}>
+							<label class="mb-3 grid gap-1.5 text-sm font-600 text-stone-700" for="academic-file">
+								教务文件
 								<input
-									id="exam-file"
-									bind:this={examInput}
+									id="academic-file"
+									bind:this={academicInput}
 									class="box-border w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-xs text-stone-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-700 file:text-violet-800 focus:border-violet-500 focus:ring-3 focus:ring-violet-100"
 									type="file"
-									accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+									accept=".xls,.xlsx,.pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf"
 									required
-									disabled={!appStore.token || importingExam}
-									onchange={selectExam}
+									disabled={!appStore.token || importingAcademicFile}
+									onchange={selectAcademicFile}
 								/>
 							</label>
-							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !examFile || importingExam}>
-								{importingExam ? '正在导入…' : '导入考试安排'}
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !academicFile || importingAcademicFile || (/\.pdf$/i.test(academicFile.name) && !appStore.courseDate)}>
+								{importingAcademicFile ? '正在导入…' : '导入教务文件'}
 							</button>
 						</form>
 					</section>

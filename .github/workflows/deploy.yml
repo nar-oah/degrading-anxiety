@@ -30,6 +30,7 @@ jobs:
           - api
           - course
           - exam
+          - adjustment
           - schedule
           - radicale
 

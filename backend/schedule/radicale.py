@@ -37,6 +37,9 @@ class Radicale:
             else self.principal.make_calendar(name=name)
         )
 
+    def del_events(self, name: str) -> None:
+        self.calendars[name].delete(wipe=True)
+
     def add_event(
         self, name: str, event: REvent, rrule: Rrule | None = None
     ) -> None:

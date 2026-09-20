@@ -45,3 +45,22 @@ def add_exam_task(token: str, excel: bytes) -> AsyncResult:
         queue="schedule",
     )
     return chain(get_exam, add_exam).apply_async()
+
+
+def add_adjustment_task(token: str, day: date, pdf: bytes) -> AsyncResult:
+    get_course = celery_app.signature(
+        "course.get",
+        args=[{"date": day.isoformat()}],
+        queue="course",
+    )
+    apply_adjustment = celery_app.signature(
+        "adjustment.apply",
+        args=[pdf],
+        queue="adjustment",
+    )
+    replace_course = celery_app.signature(
+        "schedule.course.replace",
+        args=[token],
+        queue="schedule",
+    )
+    return chain(get_course, apply_adjustment, replace_course).apply_async()

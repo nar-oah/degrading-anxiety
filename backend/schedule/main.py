@@ -37,6 +37,18 @@ def add_course(events: REventList, token: str) -> None:
 
 
 @celery_app.task(
+    name="schedule.course.replace",
+    pydantic=True,
+    pydantic_strict=False,
+    ignore_result=True,
+)
+def replace_course(events: REventList, token: str) -> None:
+    radicale = get_radicale(token)
+    radicale.del_events(COURSE_CALENDAR)
+    list(map(lambda event: radicale.add_event(COURSE_CALENDAR, event), events.root))
+
+
+@celery_app.task(
     name="schedule.exam",
     pydantic=True,
     pydantic_strict=False,
