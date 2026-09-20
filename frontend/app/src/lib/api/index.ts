@@ -62,6 +62,19 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
+		async addAdjustment(token: string, date: string, file: File): Promise<string | undefined> {
+			const { data, error } = await api.POST('/adjustment', {
+				params: { query: { token, date } },
+				body: { file: file.name },
+				bodySerializer() {
+					const data = new FormData();
+					data.append('file', file);
+					return data;
+				}
+			});
+			if (!error) return data;
+		},
+
 		async getExport(token: string, date: string): Promise<Blob | undefined> {
 			const { data, error } = await api.GET('/export', {
 				params: { query: { token, date } },
