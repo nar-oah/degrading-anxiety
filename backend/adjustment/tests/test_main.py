@@ -33,10 +33,12 @@ class AdjustmentTest(TestCase):
             [(event.summary, event.dtstart.date()) for event in result],
             [
                 ("数学", date(2026, 9, 21)),
+                ("数学", date(2026, 10, 12)),
+                ("数学", date(2026, 9, 20)),
                 ("英语", date(2026, 9, 20)),
             ],
         )
-        copied = result[1]
+        copied = result[3]
         self.assertEqual(copied.dtstart.time(), time(10, 10))
         self.assertEqual(copied.dtend.time(), time(11, 50))
         self.assertEqual(copied.location, "B202")
