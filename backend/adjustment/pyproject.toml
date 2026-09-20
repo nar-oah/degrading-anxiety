@@ -5,6 +5,7 @@ requires-python = ">=3.14"
 dependencies = [
     "celery[redis]>=5.6.3",
     "degrading-anxiety-contracts",
+    "pypdf>=6.0.0",
 ]
 
 [tool.uv.sources]
