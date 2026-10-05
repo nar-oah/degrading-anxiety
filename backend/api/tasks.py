@@ -20,13 +20,21 @@ def add_task(name: str, token: str, value: BaseModel | int | str) -> AsyncResult
 
 
 def add_course_task(token: str, day: date) -> AsyncResult:
+    return _add_course_task(token, day, "schedule.course")
+
+
+def add_course_sync_task(token: str, day: date) -> AsyncResult:
+    return _add_course_task(token, day, "schedule.course.sync")
+
+
+def _add_course_task(token: str, day: date, schedule_task: str) -> AsyncResult:
     get_course = celery_app.signature(
         "course.get",
         args=[{"date": day.isoformat()}],
         queue="course",
     )
     add_course = celery_app.signature(
-        "schedule.course",
+        schedule_task,
         args=[token],
         queue="schedule",
     )

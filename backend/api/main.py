@@ -7,7 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from degrading_anxiety_contracts.schedule import REvent, TaskList
 from secrets import token_urlsafe
-from tasks import add_adjustment_task, add_course_task, add_exam_task, add_task
+from tasks import (
+    add_adjustment_task,
+    add_course_sync_task,
+    add_course_task,
+    add_exam_task,
+    add_task,
+)
 
 app = FastAPI(title="Degrading Anxiety API")
 app.add_middleware(
@@ -61,6 +67,11 @@ def add_alloc(token: str, tasks: TaskList) -> str | None:
 @app.post("/course", response_model=str, status_code=status.HTTP_202_ACCEPTED)
 def add_course(token: str, date: date) -> str | None:
     return add_course_task(token, get_course_date(date)).id
+
+
+@app.post("/course/sync", response_model=str, status_code=status.HTTP_202_ACCEPTED)
+def sync_course(token: str, date: date) -> str | None:
+    return add_course_sync_task(token, get_course_date(date)).id
 
 
 @app.post("/exam", response_model=str, status_code=status.HTTP_202_ACCEPTED)

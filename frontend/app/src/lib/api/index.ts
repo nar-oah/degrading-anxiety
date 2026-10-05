@@ -49,6 +49,13 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
+		async syncCourse(token: string, date: string): Promise<string | undefined> {
+			const { data, error } = await api.POST('/course/sync', {
+				params: { query: { token, date } }
+			});
+			if (!error) return data;
+		},
+
 		async addExam(token: string, file: File): Promise<string | undefined> {
 			const { data, error } = await api.POST('/exam', {
 				params: { query: { token } },

@@ -37,6 +37,21 @@ def add_course(events: REventList, token: str) -> None:
 
 
 @celery_app.task(
+    name="schedule.course.sync",
+    pydantic=True,
+    pydantic_strict=False,
+    ignore_result=True,
+)
+def sync_course(events: REventList, token: str) -> None:
+    radicale = get_radicale(token)
+    existing_names = radicale.get_event_summaries(COURSE_CALENDAR)
+    missing_names = {event.summary for event in events.root} - existing_names
+    for event in events.root:
+        if event.summary in missing_names:
+            radicale.add_event(COURSE_CALENDAR, event)
+
+
+@celery_app.task(
     name="schedule.course.replace",
     pydantic=True,
     pydantic_strict=False,

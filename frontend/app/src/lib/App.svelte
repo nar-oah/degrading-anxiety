@@ -19,6 +19,7 @@
 	let delaying = $state(false);
 	let delayMinutes = $state<number | undefined>(15);
 	let importingCourse = $state(false);
+	let syncingCourse = $state(false);
 	let academicFile = $state<File>();
 	let academicInput = $state<HTMLInputElement>();
 	let importingAcademicFile = $state(false);
@@ -186,6 +187,23 @@
 			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
 		} finally {
 			importingCourse = false;
+		}
+	}
+
+	async function syncCourse() {
+		if (!appStore.token || !appStore.courseDate || syncingCourse) return;
+		syncingCourse = true;
+		notice = undefined;
+		try {
+			await appStore.syncCourse(appStore.courseDate);
+			notice = {
+				tone: 'success',
+				text: '课程同步请求已提交，新增加的课程将添加到 Course 日历。'
+			};
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '课程同步请求提交失败，请稍后重试') };
+		} finally {
+			syncingCourse = false;
 		}
 	}
 
@@ -448,9 +466,14 @@
 								开学日期（周一）
 								<input id="course-date" value={appStore.courseDate} onchange={updateCourseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" min="1970-01-05" step="7" required disabled={!appStore.token || importingCourse} />
 							</label>
-							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !appStore.courseDate || importingCourse}>
-								{importingCourse ? '正在导入…' : '导入课表'}
-							</button>
+							<div class="grid grid-cols-2 gap-2">
+								<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !appStore.courseDate || importingCourse}>
+									{importingCourse ? '正在导入…' : '导入课表'}
+								</button>
+								<button type="button" class="h-11 w-full rounded-xl border border-sky-200 bg-sky-50 px-4 text-sm font-700 text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-stone-200 disabled:bg-stone-100 disabled:text-stone-400" disabled={!appStore.token || !appStore.courseDate || syncingCourse} onclick={() => void syncCourse()}>
+									{syncingCourse ? '正在同步…' : '同步课程'}
+								</button>
+							</div>
 						</form>
 					</section>
 

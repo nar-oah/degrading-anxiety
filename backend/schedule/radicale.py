@@ -76,6 +76,15 @@ class Radicale:
         assert isinstance(events, list)
         return events
 
+    def get_event_summaries(self, name: str) -> set[str]:
+        events = self.calendars[name].search(event=True, expand=False)
+        return {
+            str(summary)
+            for event in events
+            for component in Calendar.from_ical(event.data).walk("VEVENT")
+            if (summary := component.get("SUMMARY")) is not None
+        }
+
     def get_times(self, name: str, day: datetime) -> Events:
         def get_local(dt: datetime) -> datetime:
             return (

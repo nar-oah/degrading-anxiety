@@ -142,6 +142,13 @@ export class AppStore {
 		return requestId;
 	}
 
+	async syncCourse(date: string): Promise<string> {
+		if (!date) throw new Error('请选择开学日期');
+		const requestId = await this.api.syncCourse(this.#getToken(), date);
+		if (!requestId) throw new Error('课程同步请求提交失败，请稍后重试');
+		return requestId;
+	}
+
 	async addExam(file: File): Promise<string> {
 		const requestId = await this.api.addExam(this.#getToken(), file);
 		if (!requestId) throw new Error('考试安排导入请求提交失败，请稍后重试');
