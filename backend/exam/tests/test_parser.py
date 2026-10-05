@@ -5,8 +5,11 @@ from parser.exam import ExamParser
 
 
 class ExamParserTest(TestCase):
-    def get_parser(self, schedule: pd.DataFrame) -> ExamParser:
+    def get_parser(
+        self, schedule: pd.DataFrame, reminder_minutes: int = 15
+    ) -> ExamParser:
         parser = ExamParser.__new__(ExamParser)
+        parser.reminder_minutes = reminder_minutes
         parser.students = pd.DataFrame(
             {"学号": [23000001, 23000002], "课程编号": ["FT03P207", "OTHER"]}
         )
@@ -36,6 +39,7 @@ class ExamParserTest(TestCase):
         self.assertEqual(events[0].dtend, datetime(2026, 9, 17, 11, 50))
         self.assertEqual(events[0].location, "教室 101")
         self.assertEqual(events[0].description, "")
+        self.assertEqual(events[0].alarms, [15])
 
     def test_native_date_and_time_become_event(self) -> None:
         schedule = pd.DataFrame(
@@ -55,3 +59,18 @@ class ExamParserTest(TestCase):
         self.assertEqual(event.dtstart, datetime(2026, 9, 17, 10, 10))
         self.assertEqual(event.dtend, datetime(2026, 9, 17, 11, 50))
         self.assertEqual(event.description, "闭卷")
+
+    def test_exams_use_requested_reminder(self) -> None:
+        schedule = pd.DataFrame(
+            {
+                "课程编号": ["FT03P207"],
+                "课程名称": ["金融风险管理"],
+                "日期": [datetime(2026, 9, 17)],
+                "开始时间": [time(10, 10)],
+                "结束时间": [time(11, 50)],
+            }
+        )
+        for minutes in (30, 0):
+            with self.subTest(reminder_minutes=minutes):
+                event = next(self.get_parser(schedule, minutes).get_exam(23000001))
+                self.assertEqual(event.alarms, [minutes])

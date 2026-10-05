@@ -11,7 +11,9 @@ def get_column(data: pd.DataFrame | pd.Series, text: str) -> str | None:
 
 
 class ExamParser:
-    def __init__(self, excel_bytes: bytes) -> None:
+    def __init__(self, excel_bytes: bytes, reminder_minutes: int = 15) -> None:
+        self.reminder_minutes = reminder_minutes
+
         def get_sheets(excel: pd.ExcelFile, texts: tuple[str, ...]) -> Iterable[pd.DataFrame]:
             def get_sheet(name: str) -> pd.DataFrame:
                 return pd.read_excel(excel, sheet_name=name, skiprows=1)
@@ -91,6 +93,7 @@ class ExamParser:
                 dtend=end,
                 location=get_text("地点"),
                 description=get_text("备注"),
+                alarms=[self.reminder_minutes],
             )
 
         return map(

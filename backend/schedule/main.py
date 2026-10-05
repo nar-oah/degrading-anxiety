@@ -3,7 +3,7 @@ import re
 from celery import Celery
 from alloc import Alloc
 from new import add_schedule, add_user
-from radicale import COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR, Radicale
+from radicale import CALENDARS, COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR, Radicale
 from degrading_anxiety_contracts.schedule import REvent, REventList, TaskList
 
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
@@ -37,6 +37,21 @@ def add_course(events: REventList, token: str) -> None:
 
 
 @celery_app.task(
+    name="schedule.course.sync",
+    pydantic=True,
+    pydantic_strict=False,
+    ignore_result=True,
+)
+def sync_course(events: REventList, token: str) -> None:
+    radicale = get_radicale(token)
+    existing_names = radicale.get_event_summaries(COURSE_CALENDAR)
+    missing_names = {event.summary for event in events.root} - existing_names
+    for event in events.root:
+        if event.summary in missing_names:
+            radicale.add_event(COURSE_CALENDAR, event)
+
+
+@celery_app.task(
     name="schedule.course.replace",
     pydantic=True,
     pydantic_strict=False,
@@ -66,8 +81,15 @@ def mod_schedule(token: str, minute: int) -> None:
 
 
 @celery_app.task(name="schedule.alloc", pydantic=True, ignore_result=True)
-def add_alloc(token: str, tasks: TaskList) -> None:
-    add_schedule(get_radicale(token), tasks.root)
+def add_alloc(token: str, tasks: TaskList, reminder_minutes: int = 15) -> None:
+    add_schedule(get_radicale(token), tasks.root, reminder_minutes)
+
+
+@celery_app.task(name="schedule.reminder", ignore_result=True)
+def mod_reminder(token: str, old_minutes: int, new_minutes: int) -> None:
+    radicale = get_radicale(token)
+    for calendar in CALENDARS:
+        radicale.update_reminders(calendar, old_minutes, new_minutes)
 
 
 @celery_app.task(name="schedule.export")

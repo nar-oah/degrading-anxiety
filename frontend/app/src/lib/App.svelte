@@ -18,7 +18,10 @@
 	let arranging = $state(false);
 	let delaying = $state(false);
 	let delayMinutes = $state<number | undefined>(15);
+	let reminderMinutes = $state<number | undefined>(15);
+	let updatingReminder = $state(false);
 	let importingCourse = $state(false);
+	let syncingCourse = $state(false);
 	let academicFile = $state<File>();
 	let academicInput = $state<HTMLInputElement>();
 	let importingAcademicFile = $state(false);
@@ -27,6 +30,10 @@
 	let draggedTask = $state<Task>();
 	let dragTarget = $state<Task>();
 	let pointerDragId: number | undefined;
+
+	$effect(() => {
+		reminderMinutes = appStore.reminderMinutes;
+	});
 
 	const totalMinutes = $derived(appStore.tasks.reduce((total, task) => total + task.duration, 0));
 	const caldavUrl = $derived(
@@ -186,6 +193,43 @@
 			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
 		} finally {
 			importingCourse = false;
+		}
+	}
+
+	async function updateReminder() {
+		if (!appStore.token || updatingReminder) return;
+		const minutes = reminderMinutes;
+		if (minutes === undefined || !Number.isInteger(minutes) || minutes < 0) {
+			notice = { tone: 'error', text: '提醒时间需要是非负整数' };
+			return;
+		}
+		if (minutes === appStore.reminderMinutes) return;
+		updatingReminder = true;
+		notice = undefined;
+		try {
+			await appStore.setReminderMinutes(minutes);
+			notice = { tone: 'success', text: `默认提醒已设为提前 ${minutes} 分钟，已有日程的默认提醒修改请求已提交。` };
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '提醒修改请求提交失败，请稍后重试') };
+		} finally {
+			updatingReminder = false;
+		}
+	}
+
+	async function syncCourse() {
+		if (!appStore.token || !appStore.courseDate || syncingCourse) return;
+		syncingCourse = true;
+		notice = undefined;
+		try {
+			await appStore.syncCourse(appStore.courseDate);
+			notice = {
+				tone: 'success',
+				text: '课程同步请求已提交，新增加的课程将添加到 Course 日历。'
+			};
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '课程同步请求提交失败，请稍后重试') };
+		} finally {
+			syncingCourse = false;
 		}
 	}
 
@@ -434,6 +478,20 @@
 						</p>
 					</section>
 
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="reminder-title">
+						<h2 id="reminder-title" class="m-0 text-lg font-800 text-stone-900">默认提醒</h2>
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void updateReminder(); }}>
+							<label class="mb-3 flex items-center gap-2 text-sm font-600 text-stone-700" for="reminder-minutes">
+								提前
+								<input id="reminder-minutes" bind:value={reminderMinutes} class="box-border h-11 w-20 rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100" type="number" min="0" step="1" inputmode="numeric" required disabled={!appStore.token || updatingReminder} />
+								分钟提醒
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || updatingReminder}>
+								{updatingReminder ? '正在提交…' : '确定'}
+							</button>
+						</form>
+					</section>
+
 					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="course-title">
 						<div>
 							<p class="m-0 mb-1 text-xs font-700 uppercase tracking-wider text-sky-700">Course</p>
@@ -448,9 +506,14 @@
 								开学日期（周一）
 								<input id="course-date" value={appStore.courseDate} onchange={updateCourseDate} class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-sky-500 focus:ring-3 focus:ring-sky-100" type="date" min="1970-01-05" step="7" required disabled={!appStore.token || importingCourse} />
 							</label>
-							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !appStore.courseDate || importingCourse}>
-								{importingCourse ? '正在导入…' : '导入课表'}
-							</button>
+							<div class="grid grid-cols-2 gap-2">
+								<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || !appStore.courseDate || importingCourse}>
+									{importingCourse ? '正在导入…' : '导入课表'}
+								</button>
+								<button type="button" class="h-11 w-full rounded-xl border border-sky-200 bg-sky-50 px-4 text-sm font-700 text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:border-stone-200 disabled:bg-stone-100 disabled:text-stone-400" disabled={!appStore.token || !appStore.courseDate || syncingCourse} onclick={() => void syncCourse()}>
+									{syncingCourse ? '正在同步…' : '同步课程'}
+								</button>
+							</div>
 						</form>
 					</section>
 

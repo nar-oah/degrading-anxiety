@@ -6,12 +6,14 @@ const TOKEN = 'token';
 const TASKS = 'tasks';
 const EVENTS = 'events';
 const COURSE_DATE = 'courseDate';
+const REMINDER_MINUTES = 'reminderMinutes';
 
 export class AppStore {
 	token = $state<string>();
 	tasks = $state<TaskList>([]);
 	events = $state<REvent[]>([]);
 	courseDate = $state('');
+	reminderMinutes = $state(15);
 	loading = $state(false);
 	initialized = $state(false);
 	error = $state<unknown>();
@@ -42,6 +44,15 @@ export class AppStore {
 	async setCourseDate(date: string): Promise<void> {
 		this.courseDate = date;
 		await this.store.set(COURSE_DATE, date);
+	}
+
+	async setReminderMinutes(minutes: number): Promise<void> {
+		if (!Number.isInteger(minutes) || minutes < 0) throw new Error('提醒时间需要是非负整数');
+		if (minutes === this.reminderMinutes) return;
+		const requestId = await this.api.modReminder(this.#getToken(), this.reminderMinutes, minutes);
+		if (!requestId) throw new Error('提醒修改请求提交失败，请稍后重试');
+		await this.store.set(REMINDER_MINUTES, minutes);
+		this.reminderMinutes = minutes;
 	}
 
 	async setTasks(tasks: TaskList): Promise<void> {
@@ -118,12 +129,15 @@ export class AppStore {
 		for (const event of this.events) {
 			const requestId = await this.api.addEvent(token, {
 				...event,
+				alarms: event.alarms === undefined || (event.alarms.length === 1 && event.alarms[0] === 15)
+					? [this.reminderMinutes]
+					: event.alarms,
 				dtstart: toTodayDateTime(toRoutineTime(event.dtstart), today),
 				dtend: toTodayDateTime(toRoutineTime(event.dtend), today)
 			});
 			if (!requestId) throw new Error(`日常任务“${event.summary}”添加失败，已停止安排`);
 		}
-		const requestId = await this.api.addAlloc(token, this.tasks);
+		const requestId = await this.api.addAlloc(token, this.tasks, this.reminderMinutes);
 		if (!requestId) throw new Error('安排请求提交失败，请稍后重试');
 		return requestId;
 	}
@@ -137,20 +151,27 @@ export class AppStore {
 
 	async addCourse(date: string): Promise<string> {
 		if (!date) throw new Error('请选择开学日期');
-		const requestId = await this.api.addCourse(this.#getToken(), date);
+		const requestId = await this.api.addCourse(this.#getToken(), date, this.reminderMinutes);
 		if (!requestId) throw new Error('课表导入请求提交失败，请稍后重试');
 		return requestId;
 	}
 
+	async syncCourse(date: string): Promise<string> {
+		if (!date) throw new Error('请选择开学日期');
+		const requestId = await this.api.syncCourse(this.#getToken(), date, this.reminderMinutes);
+		if (!requestId) throw new Error('课程同步请求提交失败，请稍后重试');
+		return requestId;
+	}
+
 	async addExam(file: File): Promise<string> {
-		const requestId = await this.api.addExam(this.#getToken(), file);
+		const requestId = await this.api.addExam(this.#getToken(), file, this.reminderMinutes);
 		if (!requestId) throw new Error('考试安排导入请求提交失败，请稍后重试');
 		return requestId;
 	}
 
 	async addAdjustment(file: File): Promise<string> {
 		if (!this.courseDate) throw new Error('请先选择开学日期');
-		const requestId = await this.api.addAdjustment(this.#getToken(), this.courseDate, file);
+		const requestId = await this.api.addAdjustment(this.#getToken(), this.courseDate, file, this.reminderMinutes);
 		if (!requestId) throw new Error('调休通知导入请求提交失败，请稍后重试');
 		return requestId;
 	}
@@ -167,19 +188,24 @@ export class AppStore {
 		this.error = undefined;
 
 		try {
-			const [savedToken, savedTasks, savedEvents, savedCourseDate] = await Promise.all([
+			const [savedToken, savedTasks, savedEvents, savedCourseDate, savedReminderMinutes] = await Promise.all([
 				this.store.get<string>(TOKEN),
 				this.store.get<TaskList>(TASKS),
 				this.store.get<REvent[]>(EVENTS),
-				this.store.get<string>(COURSE_DATE)
+				this.store.get<string>(COURSE_DATE),
+				this.store.get<number>(REMINDER_MINUTES)
 			]);
 			const tasks = savedTasks ?? [];
 			const events = savedEvents ?? [];
 			this.tasks = tasks;
 			this.events = events;
 			this.courseDate = savedCourseDate ?? '';
+			this.reminderMinutes = typeof savedReminderMinutes === 'number' && Number.isInteger(savedReminderMinutes) && savedReminderMinutes >= 0
+				? savedReminderMinutes
+				: 15;
 			if (savedTasks === undefined) await this.store.set(TASKS, tasks);
 			if (savedEvents === undefined) await this.store.set(EVENTS, events);
+			if (savedReminderMinutes !== this.reminderMinutes) await this.store.set(REMINDER_MINUTES, this.reminderMinutes);
 
 			const storedToken = savedToken?.trim();
 			const token = (storedToken || (await this.api.getToken()))?.trim();

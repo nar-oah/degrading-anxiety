@@ -1,11 +1,11 @@
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 import main
-from degrading_anxiety_contracts.schedule import REvent, REventList, Task
+from degrading_anxiety_contracts.schedule import REvent, REventList, Task, TaskList
 from new import add_schedule
-from radicale import ALLOC_CALENDAR, COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR
+from radicale import ALLOC_CALENDAR, CALENDARS, COURSE_CALENDAR, EXAM_CALENDAR, NORMAL_CALENDAR, Radicale
 
 
 class FakeRadicale:
@@ -79,3 +79,24 @@ class CalendarRoutesTest(TestCase):
         self.assertEqual(
             list(map(lambda value: value[0], radicale.added)), [ALLOC_CALENDAR]
         )
+
+    def test_alloc_task_forwards_default_and_custom_reminders(self) -> None:
+        tasks = TaskList(root=[Task(description="alloc", duration=10)])
+        for minutes in (None, 30):
+            with (
+                self.subTest(minutes=minutes),
+                patch.object(main, "get_radicale", return_value=Mock()) as get_radicale,
+                patch.object(main, "add_schedule") as add,
+            ):
+                args = () if minutes is None else (minutes,)
+                main.add_alloc.run("token", tasks, *args)
+                add.assert_called_once_with(get_radicale.return_value, tasks.root,
+                                            15 if minutes is None else minutes)
+
+    def test_reminder_task_updates_all_four_calendars(self) -> None:
+        radicale = Mock(spec=Radicale)
+        with patch.object(main, "get_radicale", return_value=radicale):
+            main.mod_reminder.run("token", 15, 30)
+
+        self.assertEqual(radicale.update_reminders.call_args_list,
+                         [call(calendar, 15, 30) for calendar in CALENDARS])

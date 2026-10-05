@@ -19,6 +19,16 @@ class ExamWorkerTest(TestCase):
             parser.return_value.get_exam.return_value = iter((event,))
             result = main.get_exam.run(b"excel")
 
-        parser.assert_called_once_with(b"excel")
+        parser.assert_called_once_with(b"excel", 15)
         parser.return_value.get_exam.assert_called_once_with(23000001)
         self.assertEqual(result, [event.model_dump(mode="json")])
+
+    def test_worker_passes_requested_reminder_to_parser(self) -> None:
+        with (
+            patch.dict(main.environ, {"COURSE_USER": "23000001"}),
+            patch.object(main, "ExamParser") as parser,
+        ):
+            parser.return_value.get_exam.return_value = iter(())
+            main.get_exam.run(b"excel", reminder_minutes=30)
+
+        parser.assert_called_once_with(b"excel", 30)

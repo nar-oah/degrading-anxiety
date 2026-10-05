@@ -19,7 +19,7 @@ class AdjustmentRouteTest(TestCase):
 
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json(), "adjustment-task-id")
-        add.assert_called_once_with("token", date(2026, 9, 14), b"pdf")
+        add.assert_called_once_with("token", date(2026, 9, 14), b"pdf", 15)
 
     def test_adjustment_route_rejects_non_monday(self) -> None:
         response = TestClient(main.app).post(
@@ -46,9 +46,33 @@ class AdjustmentTaskTest(TestCase):
         self.assertEqual(
             signature.call_args_list,
             [
-                call("course.get", args=[{"date": "2026-09-14"}], queue="course"),
-                call("adjustment.apply", args=[b"pdf"], queue="adjustment"),
+                call("course.get", args=[{"date": "2026-09-14"}],
+                     kwargs={"reminder_minutes": 15}, queue="course"),
+                call("adjustment.apply", args=[b"pdf"],
+                     kwargs={"reminder_minutes": 15}, queue="adjustment"),
                 call("schedule.course.replace", args=["token"], queue="schedule"),
             ],
         )
         add_chain.assert_called_once_with("get", "apply", "replace")
+
+    def test_adjustment_upload_forwards_custom_reminder_to_both_workers(self) -> None:
+        with (
+            patch.object(tasks.celery_app, "signature", side_effect=["get", "apply", "replace"])
+            as signature,
+            patch.object(tasks, "chain") as adjustment_chain,
+        ):
+            adjustment_chain.return_value.apply_async.return_value = SimpleNamespace(id="task-id")
+            response = TestClient(main.app).post(
+                "/adjustment",
+                params={"token": "token", "date": "2026-09-14", "reminder_minutes": 30},
+                files={"file": ("notice.pdf", b"pdf", "application/pdf")},
+            )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(signature.call_args_list, [
+            call("course.get", args=[{"date": "2026-09-14"}],
+                 kwargs={"reminder_minutes": 30}, queue="course"),
+            call("adjustment.apply", args=[b"pdf"],
+                 kwargs={"reminder_minutes": 30}, queue="adjustment"),
+            call("schedule.course.replace", args=["token"], queue="schedule"),
+        ])
