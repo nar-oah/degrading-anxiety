@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/course/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Course */
+        post: operations["sync_course_course_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/exam": {
         parameters: {
             query?: never;
@@ -149,13 +166,13 @@ export interface components {
          * @enum {string}
          */
         Arrange: "early" | "late" | "normal";
-        /** Body_add_exam_exam_post */
-        Body_add_exam_exam_post: {
+        /** Body_add_adjustment_adjustment_post */
+        Body_add_adjustment_adjustment_post: {
             /** File */
             file: string;
         };
-        /** Body_add_adjustment_adjustment_post */
-        Body_add_adjustment_adjustment_post: {
+        /** Body_add_exam_exam_post */
+        Body_add_exam_exam_post: {
             /** File */
             file: string;
         };
@@ -352,6 +369,38 @@ export interface operations {
         };
     };
     add_course_course_post: {
+        parameters: {
+            query: {
+                token: string;
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_course_course_sync_post: {
         parameters: {
             query: {
                 token: string;

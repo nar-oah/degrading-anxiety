@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest import TestCase
 from unittest.mock import Mock, call, patch
 from caldav import Event as CalDAVEvent
 from icalendar import Alarm, Calendar, Event, Todo
+import main
+from degrading_anxiety_contracts.schedule import REvent, REventList
 from radicale import COURSE_CALENDAR, NORMAL_CALENDAR, Radicale
 
 
@@ -69,4 +71,36 @@ class EventSummariesTest(TestCase):
         )
         self.assertEqual([resource.data for resource in resources], original_data)
         get_daily_events.assert_not_called()
+        self.other_calendar.search.assert_not_called()
+
+    def test_sync_never_deletes_or_modifies_existing_events(self) -> None:
+        component = Event()
+        component.add("SUMMARY", "已有课程")
+        component.add("LOCATION", "原教室")
+        resource = calendar_resource(component)
+        original_data = resource.data
+        self.course_calendar.search.return_value = [resource]
+        start = datetime(2026, 9, 14, 8, 20)
+        existing = REvent(
+            summary="已有课程", dtstart=start, dtend=start + timedelta(hours=1),
+            location="新教室",
+        )
+        new = existing.model_copy(update={"summary": "新增课程"})
+        events = REventList(root=[existing, new]).model_dump(mode="json")
+
+        with (
+            patch.object(main, "get_radicale", return_value=self.radicale),
+            patch.object(self.radicale, "add_event") as add_event,
+            patch.object(resource, "save") as save_event,
+            patch.object(resource, "delete") as delete_event,
+        ):
+            main.sync_course.run(events, "token")
+
+        add_event.assert_called_once_with(COURSE_CALENDAR, new)
+        save_event.assert_not_called()
+        delete_event.assert_not_called()
+        self.assertEqual(resource.data, original_data)
+        self.assertEqual(
+            self.course_calendar.mock_calls, [call.search(event=True, expand=False)]
+        )
         self.other_calendar.search.assert_not_called()
