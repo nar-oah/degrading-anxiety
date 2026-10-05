@@ -27,8 +27,9 @@ def get_weeks(value: str) -> tuple[int, ...]:
 
 
 class ClassParser:
-    def __init__(self, excel: bytes, start: date) -> None:
+    def __init__(self, excel: bytes, start: date, reminder_minutes: int = 15) -> None:
         self.start = start
+        self.reminder_minutes = reminder_minutes
         self.df = pd.read_excel(BytesIO(excel), skiprows=1)
 
     def get_courses(self) -> Iterable[Course]:
@@ -69,6 +70,7 @@ class ClassParser:
             location=parts[4],
             description=parts[1],
             repeat=repeat,
+            alarms=[self.reminder_minutes],
         )
 
     def get_events(self, course: Course, anchor_week: int) -> Iterable[REvent]:

@@ -65,7 +65,6 @@
 				dtend: toTodayDateTime(endTime, today),
 				location: '',
 				description: text,
-				alarms: [15],
 				repeat: null
 			});
 			summary = '';

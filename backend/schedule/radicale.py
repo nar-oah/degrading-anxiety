@@ -3,7 +3,7 @@ from itertools import chain
 from caldav.davclient import DAVClient
 from caldav import Calendar as CalDAVCalendar, Event
 from datetime import datetime, timedelta, tzinfo
-from icalendar import Alarm, Component, Calendar
+from icalendar import Alarm, Component, Calendar, vText
 from degrading_anxiety_contracts.schedule import REvent
 
 type Events = Iterable[tuple[datetime, datetime]]
@@ -84,6 +84,33 @@ class Radicale:
             for component in Calendar.from_ical(event.data).walk("VEVENT")
             if (summary := component.get("SUMMARY")) is not None
         }
+
+    def update_reminders(
+        self, name: str, old_minutes: int, new_minutes: int
+    ) -> None:
+        # Zero-minute alarms belong to the special Arrange.NORMAL behavior.
+        if old_minutes == 0 or old_minutes == new_minutes:
+            return
+
+        old_trigger = timedelta(minutes=-old_minutes)
+        events = self.calendars[name].search(event=True, expand=False)
+        for event in events:
+            calendar = Calendar.from_ical(event.data)
+            changed = False
+            for component in calendar.walk("VEVENT"):
+                for alarm in component.walk("VALARM"):
+                    trigger = alarm.get("TRIGGER")
+                    if trigger is None or trigger.dt != old_trigger:
+                        continue
+                    trigger.dt = timedelta(minutes=-new_minutes)
+                    description = vText(f"{new_minutes}分钟前提醒")
+                    if (previous := alarm.get("DESCRIPTION")) is not None:
+                        description.params = previous.params.copy()
+                    alarm["DESCRIPTION"] = description
+                    changed = True
+            if changed:
+                event.data = calendar.to_ical()
+                event.save(increase_seqno=False, only_this_recurrence=False)
 
     def get_times(self, name: str, day: datetime) -> Events:
         def get_local(dt: datetime) -> datetime:

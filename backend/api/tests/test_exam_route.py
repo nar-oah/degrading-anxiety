@@ -18,7 +18,7 @@ class ExamRouteTest(TestCase):
 
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json(), "exam-task-id")
-        add_exam.assert_called_once_with("token", b"excel")
+        add_exam.assert_called_once_with("token", b"excel", 15)
 
 
 class ExamTaskTest(TestCase):
@@ -36,8 +36,26 @@ class ExamTaskTest(TestCase):
         self.assertEqual(
             signature.call_args_list,
             [
-                call("exam.get", args=[b"excel"], queue="exam"),
+                call("exam.get", args=[b"excel"], kwargs={"reminder_minutes": 15}, queue="exam"),
                 call("schedule.exam", args=["token"], queue="schedule"),
             ],
         )
         add_chain.assert_called_once_with("get", "add")
+
+    def test_exam_upload_forwards_custom_reminder_through_chain(self) -> None:
+        with (
+            patch.object(tasks.celery_app, "signature", side_effect=["get", "add"])
+            as signature,
+            patch.object(tasks, "chain") as exam_chain,
+        ):
+            exam_chain.return_value.apply_async.return_value = SimpleNamespace(id="task-id")
+            response = TestClient(main.app).post(
+                "/exam", params={"token": "token", "reminder_minutes": 30},
+                files={"file": ("exam.xls", b"excel", "application/vnd.ms-excel")},
+            )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(signature.call_args_list, [
+            call("exam.get", args=[b"excel"], kwargs={"reminder_minutes": 30}, queue="exam"),
+            call("schedule.exam", args=["token"], queue="schedule"),
+        ])

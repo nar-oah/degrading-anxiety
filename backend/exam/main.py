@@ -15,6 +15,6 @@ celery_app = Celery(
     pydantic=True,
     pydantic_strict=False,
 )
-def get_exam(excel: bytes) -> REventList:
+def get_exam(excel: bytes, reminder_minutes: int = 15) -> REventList:
     student_id = int(environ["COURSE_USER"])
-    return REventList(root=list(ExamParser(excel).get_exam(student_id)))
+    return REventList(root=list(ExamParser(excel, reminder_minutes).get_exam(student_id)))

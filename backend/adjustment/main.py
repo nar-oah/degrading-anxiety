@@ -11,7 +11,7 @@ celery_app = Celery(
 )
 
 
-def get_events(events: REventList) -> list[REvent]:
+def get_events(events: REventList, reminder_minutes: int = 15) -> list[REvent]:
     def get_occurrences(event: REvent) -> list[REvent]:
         count, interval = event.repeat if isinstance(event.repeat, tuple) else (1, 1)
         return list(
@@ -21,6 +21,7 @@ def get_events(events: REventList) -> list[REvent]:
                         "dtstart": event.dtstart + timedelta(weeks=index * interval),
                         "dtend": event.dtend + timedelta(weeks=index * interval),
                         "repeat": None,
+                        "alarms": [reminder_minutes],
                     }
                 ),
                 range(count),
@@ -34,8 +35,9 @@ def mod_courses(
     events: REventList,
     holidays: list[tuple[date, date]],
     makeups: list[tuple[date, date]],
+    reminder_minutes: int = 15,
 ) -> REventList:
-    original = get_events(events)
+    original = get_events(events, reminder_minutes)
     remaining = list(
         filter(
             lambda event: not any(
@@ -67,6 +69,6 @@ def mod_courses(
 
 
 @celery_app.task(name="adjustment.apply", pydantic=True, pydantic_strict=False)
-def apply(events: REventList, pdf: bytes) -> REventList:
+def apply(events: REventList, pdf: bytes, reminder_minutes: int = 15) -> REventList:
     holidays, makeups = get_adjustment(pdf)
-    return mod_courses(events, holidays, makeups)
+    return mod_courses(events, holidays, makeups, reminder_minutes)

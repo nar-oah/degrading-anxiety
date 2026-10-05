@@ -15,7 +15,7 @@ class CourseRouteTest(TestCase):
             task_id = main.add_course("token", date(2026, 9, 14))
 
         self.assertEqual(task_id, "course-task-id")
-        add_course.assert_called_once_with("token", date(2026, 9, 14))
+        add_course.assert_called_once_with("token", date(2026, 9, 14), 15)
 
     def test_course_route_rejects_non_monday(self) -> None:
         with self.assertRaises(HTTPException) as raised:
@@ -39,6 +39,7 @@ class CourseRouteTest(TestCase):
                 call(
                     "course.get",
                     args=[{"date": "2026-09-14"}],
+                    kwargs={"reminder_minutes": 15},
                     queue="course",
                 ),
                 call("schedule.course", args=["token"], queue="schedule"),
@@ -66,7 +67,10 @@ class CourseSyncRouteTest(TestCase):
         self.assertEqual(
             signature.call_args_list,
             [
-                call("course.get", args=[{"date": "2026-09-14"}], queue="course"),
+                call(
+                    "course.get", args=[{"date": "2026-09-14"}],
+                    kwargs={"reminder_minutes": 15}, queue="course",
+                ),
                 call("schedule.course.sync", args=["token"], queue="schedule"),
             ],
         )
@@ -83,3 +87,27 @@ class CourseSyncRouteTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"detail": "Course start date must be a Monday"})
         sync_course.assert_not_called()
+
+    def test_course_and_sync_forward_custom_reminders_to_fetch_worker(self) -> None:
+        for path, schedule_task in (
+            ("/course", "schedule.course"),
+            ("/course/sync", "schedule.course.sync"),
+        ):
+            with (
+                self.subTest(path=path),
+                patch.object(tasks.celery_app, "signature", side_effect=["fetch", "save"])
+                as signature,
+                patch.object(tasks, "chain") as course_chain,
+            ):
+                course_chain.return_value.apply_async.return_value = SimpleNamespace(id="task-id")
+                response = TestClient(main.app).post(
+                    path,
+                    params={"token": "token", "date": "2026-09-14", "reminder_minutes": 30},
+                )
+
+                self.assertEqual(response.status_code, 202)
+                self.assertEqual(signature.call_args_list, [
+                    call("course.get", args=[{"date": "2026-09-14"}],
+                         kwargs={"reminder_minutes": 30}, queue="course"),
+                    call(schedule_task, args=["token"], queue="schedule"),
+                ])

@@ -34,31 +34,38 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
-		async addAlloc(token: string, tasks: TaskList): Promise<string | undefined> {
+		async modReminder(token: string, oldMinutes: number, newMinutes: number): Promise<string | undefined> {
+			const { data, error } = await api.POST('/reminder', {
+				params: { query: { token, old_minutes: oldMinutes, new_minutes: newMinutes } }
+			});
+			if (!error) return data;
+		},
+
+		async addAlloc(token: string, tasks: TaskList, reminderMinutes = 15): Promise<string | undefined> {
 			const { data, error } = await api.POST('/alloc', {
-				params: { query: { token } },
+				params: { query: { token, reminder_minutes: reminderMinutes } },
 				body: tasks
 			});
 			if (!error) return data;
 		},
 
-		async addCourse(token: string, date: string): Promise<string | undefined> {
+		async addCourse(token: string, date: string, reminderMinutes = 15): Promise<string | undefined> {
 			const { data, error } = await api.POST('/course', {
-				params: { query: { token, date } }
+				params: { query: { token, date, reminder_minutes: reminderMinutes } }
 			});
 			if (!error) return data;
 		},
 
-		async syncCourse(token: string, date: string): Promise<string | undefined> {
+		async syncCourse(token: string, date: string, reminderMinutes = 15): Promise<string | undefined> {
 			const { data, error } = await api.POST('/course/sync', {
-				params: { query: { token, date } }
+				params: { query: { token, date, reminder_minutes: reminderMinutes } }
 			});
 			if (!error) return data;
 		},
 
-		async addExam(token: string, file: File): Promise<string | undefined> {
+		async addExam(token: string, file: File, reminderMinutes = 15): Promise<string | undefined> {
 			const { data, error } = await api.POST('/exam', {
-				params: { query: { token } },
+				params: { query: { token, reminder_minutes: reminderMinutes } },
 				body: { file: file.name },
 				bodySerializer() {
 					const data = new FormData();
@@ -69,9 +76,9 @@ export function createApi(fetch: Fetch) {
 			if (!error) return data;
 		},
 
-		async addAdjustment(token: string, date: string, file: File): Promise<string | undefined> {
+		async addAdjustment(token: string, date: string, file: File, reminderMinutes = 15): Promise<string | undefined> {
 			const { data, error } = await api.POST('/adjustment', {
-				params: { query: { token, date } },
+				params: { query: { token, date, reminder_minutes: reminderMinutes } },
 				body: { file: file.name },
 				bodySerializer() {
 					const data = new FormData();

@@ -18,6 +18,8 @@
 	let arranging = $state(false);
 	let delaying = $state(false);
 	let delayMinutes = $state<number | undefined>(15);
+	let reminderMinutes = $state<number | undefined>(15);
+	let updatingReminder = $state(false);
 	let importingCourse = $state(false);
 	let syncingCourse = $state(false);
 	let academicFile = $state<File>();
@@ -28,6 +30,10 @@
 	let draggedTask = $state<Task>();
 	let dragTarget = $state<Task>();
 	let pointerDragId: number | undefined;
+
+	$effect(() => {
+		reminderMinutes = appStore.reminderMinutes;
+	});
 
 	const totalMinutes = $derived(appStore.tasks.reduce((total, task) => total + task.duration, 0));
 	const caldavUrl = $derived(
@@ -187,6 +193,26 @@
 			notice = { tone: 'error', text: getMessage(value, '课表导入请求提交失败，请稍后重试') };
 		} finally {
 			importingCourse = false;
+		}
+	}
+
+	async function updateReminder() {
+		if (!appStore.token || updatingReminder) return;
+		const minutes = reminderMinutes;
+		if (minutes === undefined || !Number.isInteger(minutes) || minutes < 0) {
+			notice = { tone: 'error', text: '提醒时间需要是非负整数' };
+			return;
+		}
+		if (minutes === appStore.reminderMinutes) return;
+		updatingReminder = true;
+		notice = undefined;
+		try {
+			await appStore.setReminderMinutes(minutes);
+			notice = { tone: 'success', text: `默认提醒已设为提前 ${minutes} 分钟，已有日程的默认提醒修改请求已提交。` };
+		} catch (value) {
+			notice = { tone: 'error', text: getMessage(value, '提醒修改请求提交失败，请稍后重试') };
+		} finally {
+			updatingReminder = false;
 		}
 	}
 
@@ -450,6 +476,20 @@
 						<p class="m-0 mt-4 rounded-xl bg-stone-50 px-3 py-2.5 text-xs leading-5 text-stone-500">
 							首次提交安排或导入课表后会自动创建日历，此后即可在系统日历中添加该账户。
 						</p>
+					</section>
+
+					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="reminder-title">
+						<h2 id="reminder-title" class="m-0 text-lg font-800 text-stone-900">默认提醒</h2>
+						<form class="mt-4" onsubmit={(event) => { event.preventDefault(); void updateReminder(); }}>
+							<label class="mb-3 flex items-center gap-2 text-sm font-600 text-stone-700" for="reminder-minutes">
+								提前
+								<input id="reminder-minutes" bind:value={reminderMinutes} class="box-border h-11 w-20 rounded-xl border border-stone-200 bg-stone-50 px-3.5 text-sm text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100" type="number" min="0" step="1" inputmode="numeric" required disabled={!appStore.token || updatingReminder} />
+								分钟提醒
+							</label>
+							<button type="submit" class="h-11 w-full rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300" disabled={!appStore.token || updatingReminder}>
+								{updatingReminder ? '正在提交…' : '确定'}
+							</button>
+						</form>
 					</section>
 
 					<section class="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm" aria-labelledby="course-title">

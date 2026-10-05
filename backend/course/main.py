@@ -18,7 +18,7 @@ BASE_URL = "http://jw.bjbuft.edu.cn"
     pydantic=True,
     pydantic_strict=False,
 )
-def get_course(request: CourseRequest) -> REventList:
+def get_course(request: CourseRequest, reminder_minutes: int = 15) -> REventList:
     def get_login(fetcher: BUFTFetcher) -> BUFTFetcher:
         def get_error() -> BUFTFetcher:
             raise PermissionError("Course system login failed")
@@ -33,5 +33,7 @@ def get_course(request: CourseRequest) -> REventList:
         fetcher = get_login(
             BUFTFetcher(client, getenv("COURSE_BASE_URL", BASE_URL))
         )
-        events = ClassParser(fetcher.get_excel(request.date), request.date).get_parse()
+        events = ClassParser(
+            fetcher.get_excel(request.date), request.date, reminder_minutes
+        ).get_parse()
         return REventList(root=list(events))

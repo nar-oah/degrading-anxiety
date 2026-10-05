@@ -57,6 +57,15 @@ class CourseSyncTest(TestCase):
             [call.get_event_summaries(COURSE_CALENDAR), call.add_event(COURSE_CALENDAR, new)],
         )
 
+    def test_new_courses_keep_reminders_from_current_import(self) -> None:
+        existing = course_event("数学")
+        new = course_event("物理").model_copy(update={"alarms": [30]})
+
+        radicale = self.sync([existing, new], {"数学"})
+
+        radicale.add_event.assert_called_once_with(COURSE_CALENDAR, new)
+        self.assertEqual(radicale.add_event.call_args.args[1].alarms, [30])
+
     def test_all_segments_of_new_course_are_added(self) -> None:
         first = course_event("新增课程")
         second = course_event("新增课程", week=4)

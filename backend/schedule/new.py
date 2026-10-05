@@ -10,7 +10,9 @@ CALENDAR = "schedule"
 USERS_FILE = Path("/auth/users")
 
 
-def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
+def add_schedule(
+    radicale: Radicale, tasks: list[Task], reminder_minutes: int = 15
+) -> None:
     def get_event(task: Task, alloc: Alloc) -> REvent:
         dtstart, dtend = alloc.get_schedule(task.duration, task.arrange)
         return REvent(
@@ -18,7 +20,7 @@ def add_schedule(radicale: Radicale, tasks: list[Task]) -> None:
             dtstart=dtstart,
             dtend=dtend,
             description=task.description,
-            alarms=[0] if task.arrange == Arrange.NORMAL else [15],
+            alarms=[0] if task.arrange == Arrange.NORMAL else [reminder_minutes],
         )
 
     def add_event(event: REvent) -> None:
