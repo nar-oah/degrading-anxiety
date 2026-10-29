@@ -17,3 +17,33 @@ whole hours, or text such as `上午10点20`, `晚8：00`, and `16；05`.
 Rows marked `无`, `无辅导`, or `无考试`, and rows without dates are ignored.
 Invalid dates or times and non-positive durations are skipped with a worker log
 warning; they never fall back to the current time.
+
+## Tests
+
+From `backend/exam`, run:
+
+```sh
+uv run --locked --package exam python -m unittest discover -s tests -v
+```
+
+On NixOS, enter the backend development environment first so NumPy's native
+extensions can find `libstdc++.so.6`:
+
+```sh
+cd backend/exam
+nix-shell ../shell.nix
+uv run --locked --package exam python -m unittest discover -s tests -v
+```
+
+Or run the tests in that environment without opening an interactive shell:
+
+```sh
+# From backend/exam:
+nix-shell ../shell.nix --run \
+  'uv run --locked --package exam python -m unittest discover -s tests -v'
+```
+
+The development shell uses the configured `<nixpkgs>` package set to provide
+Python, uv, and the C++ runtime for the host architecture. A missing C++ runtime
+fails during NumPy import, before any parser tests run; reinstalling the same
+Python wheels alone does not supply this NixOS runtime path.
