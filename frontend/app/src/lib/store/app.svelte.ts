@@ -2,6 +2,8 @@ import type { Api, REvent, Task, TaskList } from '../api/index.js';
 import { toRoutineTime, toTodayDateTime } from '../routine.js';
 import type { Store } from './storage.js';
 
+export const CALDAV_TOKEN_LENGTH = 43;
+
 const TOKEN = 'token';
 const TASKS = 'tasks';
 const EVENTS = 'events';
@@ -36,7 +38,8 @@ export class AppStore {
 
 	async setToken(token: string): Promise<void> {
 		const value = token.trim();
-		if (!value) throw new Error('Token 不能为空');
+		if (value.length !== CALDAV_TOKEN_LENGTH) throw new Error(`Token 必须为 ${CALDAV_TOKEN_LENGTH} 位字符`);
+		if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error('Token 只能包含英文字母、数字、下划线和连字符');
 		await this.store.set(TOKEN, value);
 		this.token = value;
 	}
