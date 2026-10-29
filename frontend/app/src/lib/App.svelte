@@ -6,7 +6,7 @@
 	import RoutineEventItem from './components/RoutineEventItem.svelte';
 	import TaskForm from './components/TaskForm.svelte';
 	import TaskItem from './components/TaskItem.svelte';
-	import { createAppStore } from './store/app.svelte.js';
+	import { CALDAV_TOKEN_LENGTH, createAppStore } from './store/app.svelte.js';
 	import type { Store } from './store/storage.js';
 
 	let { fetch, store }: { fetch: Fetch; store: Store } = $props();
@@ -14,6 +14,10 @@
 
 	type Notice = { tone: 'success' | 'error'; text: string };
 
+	let editingToken = $state(false);
+	let tokenDraft = $state('');
+	let savingToken = $state(false);
+	let tokenError = $state<string>();
 	let dateLabel = $state('今天');
 	let arranging = $state(false);
 	let delaying = $state(false);
@@ -38,7 +42,7 @@
 	const totalMinutes = $derived(appStore.tasks.reduce((total, task) => total + task.duration, 0));
 	const caldavUrl = $derived(
 		appStore.token
-			? `aws.naroah.top/degrading-anxiety/radicale/${encodeURIComponent(appStore.token)}`
+			? `https://aws.naroah.top/degrading-anxiety/radicale/${encodeURIComponent(appStore.token)}`
 			: undefined
 	);
 
@@ -46,6 +50,36 @@
 		const message = value instanceof Error ? value.message : '';
 		return /[\u3400-\u9fff]/.test(message) ? message : fallback;
 	};
+
+	function startTokenEdit() {
+		if (!appStore.token) return;
+		tokenDraft = appStore.token;
+		tokenError = undefined;
+		editingToken = true;
+	}
+
+	function cancelTokenEdit() {
+		if (savingToken) return;
+		editingToken = false;
+		tokenDraft = '';
+		tokenError = undefined;
+	}
+
+	async function saveToken() {
+		if (!editingToken || savingToken) return;
+		savingToken = true;
+		tokenError = undefined;
+		try {
+			await appStore.setToken(tokenDraft);
+			editingToken = false;
+			tokenDraft = '';
+			notice = { tone: 'success', text: 'CalDAV 账户已更新，请在日历客户端同步修改服务器地址、用户名与密码。' };
+		} catch (value) {
+			tokenError = getMessage(value, '账户保存失败，请重试');
+		} finally {
+			savingToken = false;
+		}
+	}
 
 	const pad = (value: number) => String(value).padStart(2, '0');
 	const getLocalDate = () => {
@@ -473,6 +507,39 @@
 						<CredentialRow label="服务器地址" value={caldavUrl} />
 						<CredentialRow label="用户名&密码" value={appStore.token} />
 
+						{#if editingToken}
+							<form class="mt-4 border-t border-stone-100 pt-4" onsubmit={(event) => { event.preventDefault(); void saveToken(); }}>
+								<label class="mb-2 block text-xs font-700 text-stone-700" for="caldav-token">新用户名与密码（Token）</label>
+								<input
+									id="caldav-token"
+									bind:value={tokenDraft}
+									class="box-border h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 font-mono text-xs text-stone-900 outline-none transition focus:border-emerald-500 focus:ring-3 focus:ring-emerald-100"
+									type="text"
+									autocomplete="off"
+									autocapitalize="none"
+									spellcheck={false}
+									aria-describedby={tokenError ? 'caldav-token-hint caldav-token-error' : 'caldav-token-hint'}
+									aria-invalid={!!tokenError}
+									disabled={savingToken}
+									oninput={() => (tokenError = undefined)}
+								/>
+								<p id="caldav-token-hint" class="m-0 mt-2 text-xs leading-5 text-stone-500">
+									固定 {CALDAV_TOKEN_LENGTH} 位，可用英文字母、数字、下划线和连字符。用户名、密码与服务器地址会一起更新。
+									<span class="block text-right">{tokenDraft.trim().length}/{CALDAV_TOKEN_LENGTH}</span>
+								</p>
+								{#if tokenError}
+									<p id="caldav-token-error" class="m-0 mt-2 text-xs text-red-700" role="alert">{tokenError}</p>
+								{/if}
+								<p class="m-0 mt-2 text-xs leading-5 text-stone-500">修改后将切换到该 Token 对应的账户，原账户日程不会自动迁移。</p>
+								<div class="mt-3 grid grid-cols-2 gap-2">
+									<button type="button" class="h-10 rounded-xl border border-stone-200 px-4 text-sm font-700 text-stone-600 transition hover:bg-stone-50 disabled:opacity-50" disabled={savingToken} onclick={cancelTokenEdit}>取消</button>
+									<button type="submit" class="h-10 rounded-xl bg-stone-900 px-4 text-sm font-700 text-white transition hover:bg-emerald-700 disabled:bg-stone-300" disabled={savingToken}>{savingToken ? '正在保存…' : '保存账户'}</button>
+								</div>
+							</form>
+						{:else}
+							<button type="button" class="mt-4 h-10 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-700 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-stone-200 disabled:bg-stone-100 disabled:text-stone-400" disabled={!appStore.token || appStore.loading} onclick={startTokenEdit}>修改账户</button>
+						{/if}
+
 						<p class="m-0 mt-4 rounded-xl bg-stone-50 px-3 py-2.5 text-xs leading-5 text-stone-500">
 							首次提交安排或导入课表后会自动创建日历，此后即可在系统日历中添加该账户。
 						</p>
@@ -594,6 +661,6 @@
 			</div>
 		</main>
 
-		<footer class="py-7 text-center text-xs text-stone-400">任务草稿保存在当前设备，账户凭据由系统自动生成。</footer>
+		<footer class="py-7 text-center text-xs text-stone-400">任务草稿和账户凭据保存在当前设备，可在 CalDAV 账户中修改 Token。</footer>
 	</div>
 </div>
