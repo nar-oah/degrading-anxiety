@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -20,7 +20,7 @@ members = [
 
 [[package]]
 name = "adjustment"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "adjustment" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
@@ -79,7 +79,7 @@ wheels = [
 
 [[package]]
 name = "api"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "api" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
@@ -316,7 +316,7 @@ wheels = [
 
 [[package]]
 name = "course"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "course" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
@@ -337,12 +337,12 @@ requires-dist = [
 
 [[package]]
 name = "degrading-anxiety-backend"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "." }
 
 [[package]]
 name = "degrading-anxiety-contracts"
-version = "0.1.0"
+version = "0.4.3"
 source = { editable = "contracts" }
 dependencies = [
     { name = "pydantic" },
@@ -371,7 +371,7 @@ wheels = [
 
 [[package]]
 name = "exam"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "exam" }
 dependencies = [
     { name = "celery", extra = ["redis"] },
@@ -938,7 +938,7 @@ wheels = [
 
 [[package]]
 name = "schedule"
-version = "0.1.0"
+version = "0.4.3"
 source = { virtual = "schedule" }
 dependencies = [
     { name = "bcrypt" },
